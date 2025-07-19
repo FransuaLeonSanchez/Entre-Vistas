@@ -190,7 +190,7 @@ PORT=8000
 ### Personalización
 - Modifica los prompts en `openai_service.py` para ajustar el estilo de preguntas
 - Ajusta la temperatura del modelo para mayor creatividad o consistencia
-- Cambia el modelo de OpenAI (gpt-3.5-turbo, gpt-4, etc.)
+- Cambia el modelo de OpenAI (gpt-4.1-mini, gpt-4, etc.)
 
 ## 🛡️ Seguridad
 
