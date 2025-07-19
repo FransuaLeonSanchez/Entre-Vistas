@@ -10,7 +10,7 @@ import sys
 def check_requirements():
     """Verifica que todos los requisitos estén instalados"""
     required_packages = [
-        'fastapi', 'uvicorn', 'openai', 'python-dotenv', 'pydantic'
+        'fastapi', 'uvicorn', 'openai', 'dotenv', 'pydantic'
     ]
     
     missing_packages = []
@@ -67,9 +67,8 @@ def main():
     
     # Importar y ejecutar la aplicación
     try:
-        from main import app
         import uvicorn
-        uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
     except KeyboardInterrupt:
         print("\n👋 ¡Hasta luego!")
     except Exception as e:

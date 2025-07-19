@@ -51,7 +51,7 @@ class OpenAIService:
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4.1",
                 messages=[
                     {"role": "system", "content": "Eres un experto reclutador de tecnología que crea preguntas precisas para entrevistas."},
                     {"role": "user", "content": prompt}
@@ -115,7 +115,7 @@ class OpenAIService:
 
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4.1",
                 messages=[
                     {"role": "system", "content": "Eres un experto reclutador que evalúa CVs y crea preguntas para validar experiencia real."},
                     {"role": "user", "content": prompt}
