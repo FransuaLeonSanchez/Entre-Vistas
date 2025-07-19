@@ -223,54 +223,133 @@ export default function GenerarPage() {
         </motion.form>
 
         {/* Tools Section */}
-        <motion.div variants={fadeInUp} className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900">Herramientas Adicionales</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="space-y-6"
+        >
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold text-gray-900">Herramientas Adicionales</h2>
+            <p className="text-gray-600">Activa funciones avanzadas de investigación con IA</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {tools.map((tool, index) => (
               <motion.div
                 key={tool.key}
-                variants={fadeInUp}
-                whileHover={{ scale: 1.02 }}
-                className={`card cursor-pointer transition-all duration-200 ${
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 * index }}
+                whileHover={{ scale: 1.03, y: -5 }}
+                whileTap={{ scale: 0.97 }}
+                className={`relative card cursor-pointer transition-all duration-300 overflow-hidden ${
                   activeTools[tool.key as keyof typeof activeTools]
-                    ? `ring-2 ring-${tool.color}-500 bg-${tool.color}-50`
-                    : 'hover:shadow-lg'
+                    ? `ring-2 ring-${tool.color}-500 bg-gradient-to-br from-${tool.color}-50 to-white shadow-lg`
+                    : 'hover:shadow-xl hover:shadow-gray-200/50'
                 }`}
                 onClick={() => handleToolToggle(tool.key)}
               >
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 bg-${tool.color}-100 rounded-lg flex items-center justify-center flex-shrink-0`}>
-                    <tool.icon className={`w-6 h-6 text-${tool.color}-600`} />
+                {/* Premium Badge */}
+                {tool.premium && (
+                  <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    PRO
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{tool.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{tool.description}</p>
-                    
+                )}
 
-                  </div>
-                  <div className="flex-shrink-0">
-                    <motion.div
+                <div className="p-6 space-y-4">
+                  {/* Icon and Toggle */}
+                  <div className="flex items-center justify-between">
+                    <motion.div 
                       animate={{
                         scale: activeTools[tool.key as keyof typeof activeTools] ? 1.1 : 1,
+                        rotate: activeTools[tool.key as keyof typeof activeTools] ? 5 : 0
+                      }}
+                      className={`w-14 h-14 bg-gradient-to-br ${
+                        tool.color === 'primary' 
+                          ? 'from-blue-500 to-blue-600' 
+                          : 'from-purple-500 to-purple-600'
+                      } rounded-xl flex items-center justify-center shadow-lg`}
+                    >
+                      <tool.icon className="w-7 h-7 text-white" />
+                    </motion.div>
+                    
+                    <motion.div
+                      animate={{
+                        scale: activeTools[tool.key as keyof typeof activeTools] ? 1.2 : 1,
                         backgroundColor: activeTools[tool.key as keyof typeof activeTools] 
                           ? (tool.color === 'primary' ? '#3b82f6' : '#8b5cf6')
                           : '#e5e7eb'
                       }}
-                      className="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center"
+                      className="w-7 h-7 rounded-full border-2 border-gray-300 flex items-center justify-center shadow-sm"
                     >
                       {activeTools[tool.key as keyof typeof activeTools] && (
                         <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-3 h-3 bg-white rounded-full"
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          className="w-4 h-4 bg-white rounded-full"
                         />
                       )}
                     </motion.div>
                   </div>
+
+                  {/* Content */}
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-gray-900 text-lg leading-tight">{tool.title}</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">{tool.description}</p>
+                  </div>
+
+                  {/* Status Indicator */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
+                    <div className={`w-2 h-2 rounded-full ${
+                      activeTools[tool.key as keyof typeof activeTools] 
+                        ? 'bg-green-400 animate-pulse' 
+                        : 'bg-gray-300'
+                    }`} />
+                    <span className={`text-xs font-medium ${
+                      activeTools[tool.key as keyof typeof activeTools] 
+                        ? 'text-green-600' 
+                        : 'text-gray-500'
+                    }`}>
+                      {activeTools[tool.key as keyof typeof activeTools] ? 'Activado' : 'Inactivo'}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Activation Effect */}
+                {activeTools[tool.key as keyof typeof activeTools] && (
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 animate-shimmer"
+                  />
+                )}
               </motion.div>
             ))}
           </div>
+
+          {/* Active Tools Summary */}
+          {Object.values(activeTools).some(Boolean) && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-green-800">
+                    {Object.values(activeTools).filter(Boolean).length} herramienta(s) activada(s)
+                  </h4>
+                  <p className="text-sm text-green-600">
+                    Las funciones avanzadas de IA están listas para generar preguntas más precisas
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </motion.div>
     </div>
