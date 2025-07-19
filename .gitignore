@@ -26,6 +26,16 @@ venv/
 ENV/
 env/
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+
 # Archivos de configuración locales
 .env
 .env.local
