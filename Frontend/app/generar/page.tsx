@@ -118,66 +118,7 @@ export default function GenerarPage() {
           onSubmit={handleSubmit}
           className="card space-y-6"
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Analysis Type */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Tipo de Análisis
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.analysisType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, analysisType: e.target.value }))}
-                  className="input-field appearance-none pr-10"
-                >
-                  <option value="job-proposal">Propuesta Laboral</option>
-                  <option value="cv-analysis">Análisis de CV</option>
-                  <option value="mixed">Análisis Combinado</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
 
-            {/* Difficulty Level */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Nivel de Dificultad
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.difficulty}
-                  onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value }))}
-                  className="input-field appearance-none pr-10"
-                >
-                  <option value="junior">Junior</option>
-                  <option value="intermedio">Intermedio</option>
-                  <option value="senior">Senior</option>
-                  <option value="experto">Experto</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-
-            {/* Question Count */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Cantidad de Preguntas
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.questionCount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, questionCount: e.target.value }))}
-                  className="input-field appearance-none pr-10"
-                >
-                  <option value="5">5 preguntas</option>
-                  <option value="8">8 preguntas</option>
-                  <option value="10">10 preguntas</option>
-                  <option value="15">15 preguntas</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-          </div>
 
           {/* Job Description / CV Text */}
           {formData.analysisType === 'job-proposal' || formData.analysisType === 'mixed' ? (

@@ -75,10 +75,10 @@ const agents = [
     description: "Lead Data Scientist en IBM con expertise en machine learning y análisis predictivo. Especialista en entrevistas de ciencia de datos.",
     rating: 5.0,
     reviews: 134,
-    price: "120/entrevista",
+    price: "Gratis",
     tags: ["Python", "Machine Learning", "IBM Watson", "Analytics"],
-    badge: "Premium",
-    badgeColor: "gold",
+    badge: "Acceso Libre",
+    badgeColor: "green",
     avatar: "👩‍🔬",
     experience: "Lead Data Scientist - IBM",
     company: "IBM"
@@ -237,7 +237,7 @@ export default function CatalogoPage() {
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center space-y-4">
           <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-            Entrevistadores de Empresas Top
+            Entrevistadores de Empresas
           </h1>
           <p className="text-xl text-gray-600">
             Encuentra el entrevistador técnico ideal para tu proceso de selección
