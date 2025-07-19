@@ -138,12 +138,12 @@
                 <textarea id="texto" name="texto" required placeholder="Ejemplo: Buscamos un Backend Developer para Google. El candidato trabajará en el equipo de Cloud Platform desarrollando APIs en Python. Requisitos: 3+ años de experiencia en Python, conocimientos de FastAPI, SQL y arquitecturas cloud..." rows="8"></textarea>
             </div>
             
-            <button type="submit" id="btnGenerar">Analizar y Generar Preguntas de Entrevista</button>
+            <button type="submit" id="btnGenerar">Analizar y Generar Preguntas Contextualizadas</button>
         </form>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Analizando propuesta, buscando información y generando preguntas...</p>
+            <p>Analizando propuesta, realizando búsqueda integral y generando preguntas contextualizadas...</p>
         </div>
         
         <div class="error" id="error"></div>
@@ -162,14 +162,11 @@
             </div>
             
             <div class="section">
-                <h3>❓ Preguntas de Entrevista</h3>
+                <h3>❓ Preguntas Contextualizadas con Información Específica de la Empresa</h3>
                 <div id="preguntas"></div>
             </div>
             
-            <div class="section">
-                <h3>💻 Actividades Prácticas</h3>
-                <div id="actividades"></div>
-            </div>
+            <!-- Sección de actividades eliminada del sistema -->
             
             <div class="section">
                 <h3>🔍 Debug - Datos enviados y recibidos</h3>
@@ -267,16 +264,7 @@
                 `;
             });
             
-            // Mostrar actividades
-            const actividadesDiv = document.getElementById('actividades');
-            actividadesDiv.innerHTML = '';
-            data.actividades.forEach((actividad, index) => {
-                actividadesDiv.innerHTML += `
-                    <div class="list-item">
-                        <strong>${index + 1}.</strong> ${actividad}
-                    </div>
-                `;
-            });
+            // Las actividades han sido eliminadas del sistema
             
             // Mostrar resultado
             resultado.style.display = 'block';
