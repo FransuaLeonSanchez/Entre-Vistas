@@ -39,42 +39,36 @@ export default function GenerarPage() {
 
   const [activeTools, setActiveTools] = useState({
     deepResearch: false,
-    recruiterSearch: false,
-    similarPositions: false,
     deepTechnology: false,
-    recruiterProfile: false
+    deepProfile: false
   })
 
   const [recruiterName, setRecruiterName] = useState('')
 
   const tools = [
     {
-      key: 'skillValidation',
-      title: 'Validación de Competencias',
-      description: 'Genera preguntas específicas para validar habilidades técnicas',
+      key: 'deepResearch',
+      title: 'Deep Research - Puestos Similares',
+      description: 'Activa investigación profunda de información de puestos similares en el mercado laboral',
       icon: Search,
-      color: 'primary'
+      color: 'primary',
+      premium: true
     },
     {
-      key: 'behavioralQuestions',
-      title: 'Preguntas Conductuales',
-      description: 'Crea preguntas para evaluar competencias blandas y comportamiento',
-      icon: Users,
-      color: 'secondary'
-    },
-    {
-      key: 'industrySpecific',
-      title: 'Específico por Industria',
-      description: 'Preguntas especializadas según el sector de la empresa',
-      icon: Building,
-      color: 'primary'
-    },
-    {
-      key: 'experienceLevel',
-      title: 'Nivel de Experiencia',
-      description: 'Ajusta la complejidad según el nivel del candidato',
+      key: 'deepTechnology',
+      title: 'Deep Technology - Stack Empresarial',
+      description: 'Analiza las tecnologías que trabajan las empresas del sector específico',
       icon: Cpu,
-      color: 'secondary'
+      color: 'secondary',
+      premium: true
+    },
+    {
+      key: 'deepProfile',
+      title: 'Deep Profile - Perfil Reclutador',
+      description: 'Investiga el perfil del reclutador y adapta las preguntas a su estilo',
+      icon: UserCheck,
+      color: 'primary',
+      premium: true
     }
   ]
 
