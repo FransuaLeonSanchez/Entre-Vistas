@@ -11,7 +11,8 @@ import {
   Building,
   Cpu,
   UserCheck,
-  Zap
+  Zap,
+  TrendingUp
 } from 'lucide-react'
 
 const fadeInUp = {
@@ -38,34 +39,34 @@ export default function GenerarPage() {
   })
 
   const [activeTools, setActiveTools] = useState({
-    deepResearch: false,
-    deepTechnology: false,
-    deepProfile: false
+    companyInfo: false,
+    marketAnalysis: false,
+    recruiterInfo: false
   })
 
   const [recruiterName, setRecruiterName] = useState('')
 
   const tools = [
     {
-      key: 'deepResearch',
-      title: 'Deep Research - Puestos Similares',
-      description: 'Activa investigación profunda de información de puestos similares en el mercado laboral',
-      icon: Search,
+      key: 'companyInfo',
+      title: 'Información de la Empresa en Perú',
+      description: 'Contexto específico, tecnologías, cultura organizacional y proyectos actuales',
+      icon: Building,
       color: 'primary',
       premium: true
     },
     {
-      key: 'deepTechnology',
-      title: 'Deep Technology - Stack Empresarial',
-      description: 'Analiza las tecnologías que trabajan las empresas del sector específico',
-      icon: Cpu,
+      key: 'marketAnalysis',
+      title: 'Análisis del Mercado Laboral del Puesto',
+      description: 'Puestos similares en otras empresas, tecnologías demandadas, rangos salariales',
+      icon: TrendingUp,
       color: 'secondary',
       premium: true
     },
     {
-      key: 'deepProfile',
-      title: 'Deep Profile - Perfil Reclutador',
-      description: 'Investiga el perfil del reclutador y adapta las preguntas a su estilo',
+      key: 'recruiterInfo',
+      title: 'Información del Reclutador',
+      description: 'Perfil profesional, estilo de entrevistas, criterios de evaluación',
       icon: UserCheck,
       color: 'primary',
       premium: true
