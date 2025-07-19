@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCP - Entrevista Virtual - Analista de Datos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            min-height: 100vh;
+            color: #ffffff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            color: #1e3a8a;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1e3a8a;
+            padding-bottom: 20px;
+        }
+        .bcp-logo {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        h1 {
+            color: #1e3a8a;
+            margin: 10px 0;
+        }
+        .subtitle {
+            font-size: 1.1em;
+            color: #4b5563;
+            font-weight: 500;
+        }
+        .position-info {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #1e3a8a;
+        }
+        .position-info h3 {
+            margin-top: 0;
+            color: #1e3a8a;
+        }
+        .instructions {
+            background: #ecfdf5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #059669;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #059669;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 140px;
+        }
+        #connectBtn {
+            background: #1e3a8a;
+            color: white;
+        }
+        #connectBtn:hover:not(:disabled) {
+            background: #1e40af;
+            transform: translateY(-2px);
+        }
+        #recordBtn {
+            background: #dc2626;
+            color: white;
+        }
+        #recordBtn:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+        #sendBtn {
+            background: #059669;
+            color: white;
+        }
+        #sendBtn:hover:not(:disabled) {
+            background: #047857;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .status.connected {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+        .status.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+        .status.processing {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        .audio-controls {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        .audio-preview {
+            width: 100%;
+            max-width: 400px;
+            margin: 15px auto;
+            border-radius: 8px;
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        .step {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .step.active {
+            border-color: #1e3a8a;
+            background: #f0f9ff;
+        }
+        .step.completed {
+            border-color: #059669;
+            background: #ecfdf5;
+        }
+        .step h4 {
+            margin: 0 0 5px 0;
+            color: #1e3a8a;
+        }
+        .messages {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f9fafb;
+            margin: 20px 0;
+        }
+        .message {
+            margin: 15px 0;
+            padding: 12px 16px;
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+        .message.user {
+            background: #dbeafe;
+            color: #1e40af;
+            margin-left: 20px;
+        }
+        .message.assistant {
+            background: #f0f9ff;
+            color: #1e3a8a;
+            margin-right: 20px;
+            border-left: 4px solid #1e3a8a;
+        }
+        .message.system {
+            background: #fef3c7;
+            color: #92400e;
+            font-style: italic;
+            text-align: center;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="bcp-logo">BCP</div>
+            <h1>Entrevista Virtual</h1>
+            <div class="subtitle">Banco de Crédito del Perú</div>
+        </div>
+        
+        <div class="position-info">
+            <h3>🎯 Puesto: Analista de Datos</h3>
+            <p><strong>Área:</strong> Tecnología e Innovación</p>
+            <p><strong>Modalidad:</strong> Entrevista virtual con IA</p>
+            <p><strong>Entrevistadora:</strong> María - Especialista en Recursos Humanos BCP</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 Instrucciones de la Entrevista</h3>
+            <p><strong>María</strong> te hará preguntas específicas sobre:</p>
+            <ul>
+                <li>Tu experiencia en análisis de datos</li>
+                <li>Conocimientos técnicos (SQL, Python, Excel, Power BI)</li>
+                <li>Experiencia en sector bancario o financiero</li>
+                <li>Resolución de problemas con datos</li>
+                <li>Motivación para trabajar en BCP</li>
+            </ul>
+            <p><strong>Importante:</strong> Responde de forma natural y profesional. María solo discutirá temas relacionados con esta entrevista.</p>
+        </div>
+        
+        <div class="controls">
+            <button id="connectBtn">🔌 Iniciar Entrevista</button>
+            <button id="recordBtn" disabled>🎤 Grabar Respuesta</button>
+        </div>
+        
+        <div class="status" id="statusDiv" style="display: none;"></div>
+        
+        <div class="audio-controls" id="audioControls">
+            <audio id="audioPreview" class="audio-preview" controls></audio>
+            <div style="margin-top: 15px;">
+                <button id="sendBtn" disabled>📤 Enviar Respuesta</button>
+                <button id="cancelBtn">❌ Cancelar</button>
+            </div>
+        </div>
+        
+        <div class="steps">
+            <div class="step" id="stepSTT">
+                <h4>🎤 Escuchando</h4>
+                <p>Procesando tu voz</p>
+            </div>
+            <div class="step" id="stepChat">
+                <h4>🧠 Analizando</h4>
+                <p>María está procesando</p>
+            </div>
+            <div class="step" id="stepTTS">
+                <h4>🔊 Respondiendo</h4>
+                <p>Generando respuesta</p>
+            </div>
+        </div>
+        
+        <div class="messages" id="messages"></div>
+        
+        <div class="footer">
+            <p>© 2025 Banco de Crédito del Perú - Sistema de Entrevistas Virtuales</p>
+            <p>Esta entrevista es procesada con IA avanzada para una experiencia realista</p>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const statusDiv = document.getElementById('statusDiv');
+        const messagesDiv = document.getElementById('messages');
+        const audioControls = document.getElementById('audioControls');
+        const audioPreview = document.getElementById('audioPreview');
+
+        const steps = {
+            stt: document.getElementById('stepSTT'),
+            chat: document.getElementById('stepChat'),
+            tts: document.getElementById('stepTTS')
+        };
+
+        connectBtn.addEventListener('click', connect);
+        recordBtn.addEventListener('click', toggleRecording);
+        sendBtn.addEventListener('click', sendAudio);
+        cancelBtn.addEventListener('click', cancelRecording);
+
+        function connect() {
+            connectBtn.disabled = true;
+            connectBtn.textContent = '🔄 Conectando...';
+            
+            ws = new WebSocket('ws://localhost:8000/ws');
+            
+            ws.onopen = function() {
+                showStatus('✅ Conectado - María iniciará la entrevista automáticamente', 'connected');
+                connectBtn.textContent = '✅ Conectado';
+                recordBtn.disabled = false;
+                addMessage('system', '🤖 Conectado al sistema BCP. María se está preparando...');
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = function() {
+                showStatus('❌ Conexión perdida', 'error');
+                connectBtn.disabled = false;
+                connectBtn.textContent = '🔌 Reconectar';
+                recordBtn.disabled = true;
+                resetSteps();
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'chat_response':
+                    addMessage('assistant', data.data);
+                    playResponseAudio(data.data);
+                    setStepCompleted('chat');
+                    setStepActive('tts');
+                    break;
+                    
+                case 'stt_start':
+                    setStepActive('stt');
+                    showStatus('🎤 Procesando tu voz...', 'processing');
+                    break;
+                    
+                case 'stt_result':
+                    addMessage('user', data.data);
+                    setStepCompleted('stt');
+                    setStepActive('chat');
+                    showStatus('🧠 María está analizando tu respuesta...', 'processing');
+                    break;
+                    
+                case 'chat_start':
+                    setStepActive('chat');
+                    showStatus('🧠 María está preparando su respuesta...', 'processing');
+                    break;
+                    
+                case 'tts_start':
+                    setStepActive('tts');
+                    showStatus('🔊 Generando respuesta de María...', 'processing');
+                    break;
+                    
+                case 'tts_result':
+                    const audioBlob = base64ToBlob(data.data, 'audio/mp3');
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    setStepCompleted('tts');
+                    resetSteps();
+                    showStatus('✅ Listo para tu siguiente respuesta', 'connected');
+                    break;
+                    
+                case 'error':
+                    showStatus(`❌ Error: ${data.data}`, 'error');
+                    resetSteps();
+                    break;
+            }
+        }
+
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    audioPreview.src = audioUrl;
+                    audioControls.style.display = 'block';
+                    sendBtn.disabled = false;
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.textContent = '⏹️ Detener';
+                recordBtn.style.background = '#dc2626';
+                showStatus('🎤 Grabando tu respuesta...', 'processing');
+
+            } catch (error) {
+                showStatus('❌ Error accediendo al micrófono', 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                recordBtn.textContent = '🎤 Grabar Respuesta';
+                recordBtn.style.background = '#dc2626';
+                showStatus('✅ Grabación completa - Revisa y envía', 'connected');
+            }
+        }
+
+        function sendAudio() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const reader = new FileReader();
+            
+            reader.onload = function() {
+                const base64Audio = reader.result.split(',')[1];
+                ws.send(JSON.stringify({
+                    type: 'audio',
+                    data: base64Audio
+                }));
+                
+                cancelRecording();
+                showStatus('📤 Enviando respuesta a María...', 'processing');
+            };
+            
+            reader.readAsDataURL(audioBlob);
+        }
+
+        function cancelRecording() {
+            audioControls.style.display = 'none';
+            sendBtn.disabled = true;
+            audioChunks = [];
+            showStatus('✅ Listo para grabar nueva respuesta', 'connected');
+        }
+
+        function addMessage(type, text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            if (type === 'assistant') {
+                messageDiv.innerHTML = `<strong>María (BCP):</strong> ${text}`;
+            } else if (type === 'user') {
+                messageDiv.innerHTML = `<strong>Tú:</strong> ${text}`;
+            } else {
+                messageDiv.innerHTML = text;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function playResponseAudio(text) {
+            // El audio se reproduce automáticamente cuando llega el TTS
+        }
+
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function setStepActive(stepName) {
+            resetSteps();
+            steps[stepName].classList.add('active');
+        }
+
+        function setStepCompleted(stepName) {
+            steps[stepName].classList.remove('active');
+            steps[stepName].classList.add('completed');
+        }
+
+        function resetSteps() {
+            Object.values(steps).forEach(step => {
+                step.classList.remove('active', 'completed');
+            });
+        }
+
+        function base64ToBlob(base64, mimeType) {
+            const byteCharacters = atob(base64);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+    </script>
+</body>
+</html> 

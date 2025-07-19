@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entre-Vistas - Generador de Entrevistas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .resultado {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        .list-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #007bff;
+            border-radius: 3px;
+        }
+        .info-empresa {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            display: none;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #dc3545;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+        .debug {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Entre-Vistas - Generador de Entrevistas con IA</h1>
+        
+        <div style="text-align: right; margin-bottom: 20px;">
+            <button onclick="testConexion()" style="width: auto; padding: 8px 16px; font-size: 14px; background-color: #28a745;">
+                🔧 Test Conexión API
+            </button>
+        </div>
+        
+        <form id="formulario">
+            <div class="form-group">
+                <label for="texto">Pega aquí la propuesta laboral completa:</label>
+                <textarea id="texto" name="texto" required placeholder="Ejemplo: Buscamos un Backend Developer para Google. El candidato trabajará en el equipo de Cloud Platform desarrollando APIs en Python. Requisitos: 3+ años de experiencia en Python, conocimientos de FastAPI, SQL y arquitecturas cloud..." rows="8"></textarea>
+            </div>
+            
+            <button type="submit" id="btnGenerar">Analizar y Generar Preguntas Contextualizadas</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analizando propuesta, realizando búsqueda integral y generando preguntas contextualizadas...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="resultado" id="resultado">
+            <h2>📋 Resultado de la Generación</h2>
+            
+            <div class="info-empresa" id="propuestaExtraida">
+                <h3>📄 Información Extraída de la Propuesta</h3>
+                <div id="propuestaExtraidaContent"></div>
+            </div>
+            
+            <div class="info-empresa" id="infoEmpresa">
+                <h3>🔍 Información Encontrada sobre la Empresa</h3>
+                <div id="infoEmpresaContent"></div>
+            </div>
+            
+            <div class="section">
+                <h3>❓ Preguntas Contextualizadas con Información Específica de la Empresa</h3>
+                <div id="preguntas"></div>
+            </div>
+            
+            <!-- Sección de actividades eliminada del sistema -->
+            
+            <div class="section">
+                <h3>🔍 Debug - Datos enviados y recibidos</h3>
+                <div class="debug" id="debug"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formulario = document.getElementById('formulario');
+        const btnGenerar = document.getElementById('btnGenerar');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const resultado = document.getElementById('resultado');
+        const debug = document.getElementById('debug');
+        
+        formulario.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Limpiar resultados anteriores
+            error.style.display = 'none';
+            resultado.style.display = 'none';
+            loading.style.display = 'block';
+            btnGenerar.disabled = true;
+            
+            // Obtener datos del formulario
+            const datos = {
+                texto: document.getElementById('texto').value
+            };
+            
+            // Mostrar datos enviados en debug
+            debug.innerHTML = `DATOS ENVIADOS:\n${JSON.stringify(datos, null, 2)}\n\n`;
+            
+            try {
+                // Hacer petición a la API
+                const response = await fetch('http://localhost:8000/generar-entrevista', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datos)
+                });
+                
+                const data = await response.json();
+                
+                // Mostrar datos recibidos en debug
+                debug.innerHTML += `DATOS RECIBIDOS:\n${JSON.stringify(data, null, 2)}`;
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Error al generar las preguntas');
+                }
+                
+                // Mostrar resultados
+                mostrarResultados(data);
+                
+            } catch (err) {
+                console.error('Error completo:', err);
+                error.innerHTML = `
+                    <strong>Error:</strong> ${err.message}<br>
+                    <small>Revisa la consola del navegador para más detalles</small>
+                `;
+                error.style.display = 'block';
+                debug.innerHTML += `\n\nERROR:\n${err.message}\n${err.stack || ''}`;
+            } finally {
+                loading.style.display = 'none';
+                btnGenerar.disabled = false;
+            }
+        });
+        
+        function mostrarResultados(data) {
+            // Mostrar información extraída de la propuesta
+            const propuestaExtraidaContent = document.getElementById('propuestaExtraidaContent');
+            propuestaExtraidaContent.innerHTML = `
+                <p><strong>Empresa:</strong> ${data.propuesta_extraida.empresa}</p>
+                <p><strong>Puesto:</strong> ${data.propuesta_extraida.puesto}</p>
+                <p><strong>Descripción:</strong> ${data.propuesta_extraida.descripcion}</p>
+                <p><strong>Requisitos:</strong> ${data.propuesta_extraida.requisitos}</p>
+            `;
+            
+            // Mostrar información de la empresa
+            const infoEmpresaContent = document.getElementById('infoEmpresaContent');
+            infoEmpresaContent.innerHTML = `
+                <strong>${data.informacion_empresa.nombre}</strong><br>
+                ${data.informacion_empresa.informacion_encontrada || 'No se encontró información adicional'}
+            `;
+            
+            // Mostrar preguntas
+            const preguntasDiv = document.getElementById('preguntas');
+            preguntasDiv.innerHTML = '';
+            data.preguntas.forEach((pregunta, index) => {
+                preguntasDiv.innerHTML += `
+                    <div class="list-item">
+                        <strong>${index + 1}.</strong> ${pregunta}
+                    </div>
+                `;
+            });
+            
+            // Las actividades han sido eliminadas del sistema
+            
+            // Mostrar resultado
+            resultado.style.display = 'block';
+        }
+        
+        async function testConexion() {
+            try {
+                // Test endpoint simple
+                const response = await fetch('http://localhost:8000/');
+                const data = await response.json();
+                alert(`✅ Conexión exitosa: ${data.mensaje}`);
+                
+                // Test endpoint POST
+                const testResponse = await fetch('http://localhost:8000/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ texto: "Test de conexión" })
+                });
+                const testData = await testResponse.json();
+                console.log('Test POST:', testData);
+                
+            } catch (err) {
+                alert(`❌ Error de conexión: ${err.message}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8000`);
+            }
+        }
+    </script>
+</body>
+</html> 

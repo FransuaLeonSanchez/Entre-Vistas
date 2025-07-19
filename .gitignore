@@ -1,10 +1,4 @@
-# 🔒 ARCHIVOS DE CONFIGURACIÓN SENSIBLES
-.env
-.env.local
-.env.production
-*.env
-
-# 🐍 ARCHIVOS DE PYTHON
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
@@ -25,38 +19,45 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# 📦 ENTORNOS VIRTUALES
+# Entornos virtuales
+.venv/
 venv/
-env/
 ENV/
-env.bak/
-venv.bak/
+env/
 
-# 🔧 IDEs Y EDITORES
+# Archivos de configuración locales
+.env
+.env.local
+.env.*.local
+config.local.py
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
-# 📊 LOGS Y DATABASES
-*.log
-*.sqlite3
-*.db
-
-# 🧪 TESTING
-.coverage
-.pytest_cache/
-.tox/
-
-# 🏗️ BUILD ARTIFACTS
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# 💻 SISTEMA OPERATIVO
+# Sistema
 .DS_Store
 Thumbs.db
-desktop.ini 
+
+# Logs
+*.log
+logs/
+
+# Archivos multimedia grandes
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.wav
+*.mp3
+*.flac
+
+# Archivos temporales
+*.tmp
+*.temp
+temp/
+tmp/ 
