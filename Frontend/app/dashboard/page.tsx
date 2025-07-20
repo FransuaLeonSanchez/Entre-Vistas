@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   TrendingUp,
@@ -65,10 +65,14 @@ export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("This month")
   const [activeTab, setActiveTab] = useState("overview")
 
+<<<<<<< HEAD
   // Expand sidebar when component mounts
   useEffect(() => {
     window.dispatchEvent(new Event('expandSidebar'))
   }, [])
+
+=======
+>>>>>>> 5392eb5936b6096cb28c83eae18352196e64b35b
   const maxInterviews = Math.max(...performanceData.map(d => d.interviews))
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Star,
@@ -174,10 +174,14 @@ export default function CatalogoPage() {
   const [ratingFilter, setRatingFilter] = useState(0)
   const [companyFilter, setCompanyFilter] = useState("todas")
 
+<<<<<<< HEAD
   // Expand sidebar when component mounts
   useEffect(() => {
     window.dispatchEvent(new Event('expandSidebar'))
   }, [])
+
+=======
+>>>>>>> 5392eb5936b6096cb28c83eae18352196e64b35b
   const filteredAgents = agents
     .filter(agent => {
       // Filtro de búsqueda por texto
