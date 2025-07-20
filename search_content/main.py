@@ -1,11 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict
 from openai import OpenAI
 import requests
-import aiohttp
-import asyncio
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -32,13 +30,6 @@ SONAR_API_KEY = os.getenv("SONAR_API_KEY")
 class PropuestaLaboralTexto(BaseModel):
     texto: str
 
-class PropuestaLaboralConOpciones(BaseModel):
-    texto: str
-    buscar_empresa: bool = True
-    buscar_puesto_mercado: bool = False  
-    buscar_entrevistador: bool = False
-    nombre_entrevistador: Optional[str] = None
-
 class PropuestaLaboral(BaseModel):
     empresa: str
     puesto: str
@@ -54,7 +45,6 @@ class SonarResponse(BaseModel):
 
 class RespuestaEntrevista(BaseModel):
     preguntas: List[str]
-    consejos_conexion: List[str] = []
     informacion_empresa: Dict
     propuesta_extraida: Dict
     investigacion_detallada: Dict
@@ -156,7 +146,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
         print(f"🔍 Iniciando búsqueda con {modelo} (MÁXIMA CALIDAD)")
         print(f"📝 Prompt enviado: {query[:150]}...")
         print(f"⚡ Configuración: {max_tokens} tokens, temp={temperature}")
-        print(f"⏱️  Esperando respuesta...")
+        print("⏱️  Esperando respuesta...")
         
         response = requests.post(url, json=payload, headers=headers, timeout=45)
         tiempo_respuesta = (datetime.now() - start_time).total_seconds()
@@ -179,7 +169,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
             content = data["choices"][0]["message"]["content"]
             
             # Mostrar el contenido de la respuesta en consola
-            print(f"📄 CONTENIDO DE LA BÚSQUEDA:")
+            print("📄 CONTENIDO DE LA BÚSQUEDA:")
             print(f"{'='*80}")
             print(content[:500] + "..." if len(content) > 500 else content)
             print(f"{'='*80}")
@@ -292,189 +282,6 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
             tiempo_respuesta=0.0,
             modelo_usado="error"
         )
-
-# Función asíncrona para búsquedas paralelas con Sonar
-async def buscar_con_sonar_async(query: str, search_type: str = "pro") -> SonarResponse:
-    """Versión asíncrona de buscar_con_sonar para paralelización"""
-    
-    start_time = datetime.now()
-    url = "https://api.perplexity.ai/chat/completions"
-    
-    headers = {
-        "Authorization": f"Bearer {SONAR_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # Configuración SIEMPRE de máxima calidad
-    modelo = "sonar-pro"
-    max_tokens = 2500
-    temperature = 0.1
-    
-    payload = {
-        "model": modelo,
-        "messages": [
-            {
-                "role": "system",
-                "content": "Eres un investigador experto de élite que proporciona información actualizada, precisa y extremadamente detallada basada en fuentes web confiables de alta calidad. Prioriza fuentes oficiales, verificables y recientes. Incluye detalles específicos, datos concretos y contexto relevante en cada respuesta."
-            },
-            {
-                "role": "user", 
-                "content": query
-            }
-        ],
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "search_recency_filter": "month",
-        "return_related_questions": True,
-        "search_depth_filter": "advanced",
-        "enable_clarification_questions": True
-    }
-    
-    try:
-        if not SONAR_API_KEY:
-            print("❌ SONAR_API_KEY no configurada")
-            return SonarResponse(
-                contenido="Información no disponible - API key no configurada",
-                fuentes=[],
-                busquedas_realizadas=False,
-                tiempo_respuesta=0.0,
-                modelo_usado="none"
-            )
-            
-        print(f"🔍 Iniciando búsqueda con {modelo} (MÁXIMA CALIDAD - ASYNC)")
-        print(f"📝 Prompt enviado: {query[:150]}...")
-        
-        timeout = aiohttp.ClientTimeout(total=45)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload, headers=headers) as response:
-                tiempo_respuesta = (datetime.now() - start_time).total_seconds()
-                
-                if response.status == 200:
-                    data = await response.json()
-                    print(f"🔍 Debug - Claves en respuesta: {list(data.keys())}")
-                    
-                    # Validar estructura de respuesta
-                    if "choices" not in data or not data["choices"]:
-                        print("❌ Error: Respuesta sin campo 'choices'")
-                        return SonarResponse(
-                            contenido="Error en estructura de respuesta",
-                            fuentes=[],
-                            busquedas_realizadas=False,
-                            tiempo_respuesta=tiempo_respuesta,
-                            modelo_usado=modelo
-                        )
-                    
-                    content = data["choices"][0]["message"]["content"]
-                    
-                    # Extraer fuentes/citas de la respuesta
-                    fuentes = []
-                    
-                    # Extraer fuentes de search_results (limitado a 3 fuentes)
-                    if "search_results" in data and data["search_results"]:
-                        for i, result in enumerate(data["search_results"][:3]):
-                            if isinstance(result, dict):
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": result.get("title", result.get("name", "Título no disponible"))[:80] + "..." if len(result.get("title", result.get("name", ""))) > 80 else result.get("title", result.get("name", "Título no disponible")),
-                                    "url": result.get("url", "URL no disponible"),
-                                    "fecha": result.get("date", result.get("published_date", "Fecha no disponible"))
-                                })
-                            else:
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": str(result)[:80] + "..." if len(str(result)) > 80 else str(result),
-                                    "url": "URL no disponible",
-                                    "fecha": "Fecha no disponible"
-                                })
-                    
-                    # Si no hay search_results, intentar con citations (limitado a 3)
-                    elif "citations" in data and data["citations"]:
-                        for i, citation in enumerate(data["citations"][:3]):
-                            if isinstance(citation, dict):
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": citation.get("title", "Título no disponible")[:80] + "..." if len(citation.get("title", "")) > 80 else citation.get("title", "Título no disponible"),
-                                    "url": citation.get("url", "URL no disponible"),
-                                    "fecha": citation.get("date", "Fecha no disponible")
-                                })
-                            else:
-                                url_citation = str(citation)
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": f"Fuente {i + 1}",
-                                    "url": url_citation,
-                                    "fecha": "Fecha no disponible"
-                                })
-                    
-                    # Verificar si se realizaron búsquedas web
-                    busquedas_realizadas = len(fuentes) > 0 or "based on" in content.lower() or "according to" in content.lower()
-                    
-                    print(f"✅ Búsqueda async completada en {tiempo_respuesta:.2f}s con {len(fuentes)} fuentes")
-                    
-                    return SonarResponse(
-                        contenido=content,
-                        fuentes=fuentes,
-                        busquedas_realizadas=busquedas_realizadas,
-                        tiempo_respuesta=tiempo_respuesta,
-                        modelo_usado=modelo
-                    )
-                else:
-                    response_text = await response.text()
-                    print(f"❌ Error en Sonar - Status: {response.status}, Response: {response_text}")
-                    return SonarResponse(
-                        contenido="Información no disponible en este momento",
-                        fuentes=[],
-                        busquedas_realizadas=False,
-                        tiempo_respuesta=tiempo_respuesta,
-                        modelo_usado=modelo
-                    )
-                    
-    except asyncio.TimeoutError:
-        print("⏰ Timeout en Sonar API (async)")
-        return SonarResponse(
-            contenido="Información no disponible - timeout",
-            fuentes=[],
-            busquedas_realizadas=False,
-            tiempo_respuesta=45.0,
-            modelo_usado=modelo
-        )
-    except Exception as e:
-        print(f"❌ Error en Sonar async: {e}")
-        return SonarResponse(
-            contenido="Información no disponible",
-            fuentes=[],
-            busquedas_realizadas=False,
-            tiempo_respuesta=0.0,
-            modelo_usado="error"
-        )
-
-# Función para ejecutar búsquedas en paralelo
-async def ejecutar_busquedas_paralelas(busquedas: List[tuple]) -> List[SonarResponse]:
-    """
-    Ejecuta múltiples búsquedas de Sonar en paralelo
-    busquedas: Lista de tuplas (query, nombre_busqueda)
-    """
-    print(f"\n⚡ EJECUTANDO {len(busquedas)} BÚSQUEDAS EN PARALELO")
-    print(f"{'='*80}")
-    
-    start_time = datetime.now()
-    
-    # Crear las tareas asíncronas
-    tasks = []
-    for query, nombre in busquedas:
-        print(f"🚀 Preparando búsqueda: {nombre}")
-        task = buscar_con_sonar_async(query)
-        tasks.append(task)
-    
-    # Ejecutar todas las búsquedas en paralelo
-    print(f"⚡ Iniciando {len(tasks)} búsquedas simultáneas...")
-    resultados = await asyncio.gather(*tasks)
-    
-    tiempo_total = (datetime.now() - start_time).total_seconds()
-    print(f"✅ TODAS LAS BÚSQUEDAS COMPLETADAS EN {tiempo_total:.2f}s")
-    print(f"{'='*80}")
-    
-    return resultados
 
 # Prompt integral para investigación completa de empresa y puesto
 def crear_prompt_integral(empresa: str, puesto: str) -> str:
@@ -860,43 +667,35 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
 async def root():
     return {
         "mensaje": "API de Entrevistas - Entre-Vistas", 
-        "version": "4.0", 
+        "version": "3.1", 
         "funcionalidades": [
-            "🚀 SISTEMA DE BÚSQUEDAS PARALELAS CON MÁXIMA CALIDAD",
-            "⚡ Búsquedas simultáneas para máximo rendimiento",
-            "3 tipos de búsquedas independientes activables por parámetros",
-            "Búsqueda de empresa: contexto, tecnologías, cultura en Perú",
-            "Búsqueda de mercado: puestos similares en otras empresas de Perú", 
-            "Búsqueda de entrevistador: información personal para conexión humana",
-            "sonar-pro con 2500 tokens para cada búsqueda activada",
-            "10-12 preguntas contextualizadas con información combinada",
-            "Consejos de conexión personal con el entrevistador"
+            "🚀 SIEMPRE MÁXIMA CALIDAD (sonar-pro)",
+            "1 Búsqueda integral ultra-completa",
+            "Máximo 3 fuentes de alta calidad",
+            "2500 tokens para máximo detalle en una sola consulta",
+            "Información empresarial + cultura + puesto en búsqueda unificada", 
+            "Contexto completo e integrado de empresa y rol",
+            "10-12 preguntas potenciadas con contexto integral específico",
+            "Referencias verificadas y de alta calidad",
+            "Eficiencia optimizada con una sola consulta API"
         ],
         "configuracion_maxima_calidad": {
             "modelo": "sonar-pro",
             "tokens": 2500,
             "temperature": 0.1,
             "profundidad": "advanced",
-            "fuentes_maximas_por_busqueda": 3
+            "fuentes_maximas": 3
         },
-        "busquedas_opcionales": {
-            "buscar_empresa": "Información específica de la empresa en Perú (true/false)",
-            "buscar_puesto_mercado": "Análisis del puesto en otras empresas de Perú (true/false)",
-            "buscar_entrevistador": "Información personal del entrevistador para conexión (true/false)",
-            "nombre_entrevistador": "Nombre del entrevistador (opcional, requerido si buscar_entrevistador=true)"
+        "busqueda_integral": {
+            "tipo": "Búsqueda completa unificada",
+            "incluye": "Empresa + Cultura + Puesto + Contexto específico",
+            "fuentes": "Máximo 3 fuentes de alta calidad",
+            "eficiencia": "Una sola consulta API optimizada"
         },
-        "endpoints": {
-            "/generar-entrevista": "Endpoint original (búsqueda integral)",
-            "/generar-entrevista-con-opciones": "Nuevo endpoint con búsquedas opcionales",
-            "/test-sonar": "Endpoint de prueba para búsqueda integral",
-            "/test-busquedas-opcionales": "Endpoint de prueba para búsquedas opcionales"
-        },
-        "ejemplo_uso": {
-            "texto": "Propuesta laboral como texto",
-            "buscar_empresa": True,
-            "buscar_puesto_mercado": True, 
-            "buscar_entrevistador": False,
-            "nombre_entrevistador": None
+        "metricas_calidad": {
+            "Alta": "3 fuentes encontradas",
+            "Media": "2 fuentes encontradas", 
+            "Baja": "1 fuente encontrada"
         }
     }
 
@@ -936,89 +735,6 @@ async def test_sonar(data: dict):
     except Exception as e:
         return {"error": str(e)}
 
-@app.post("/test-busquedas-opcionales")
-async def test_busquedas_opcionales(data: dict):
-    """Endpoint de debug para verificar las búsquedas opcionales con MÁXIMA CALIDAD"""
-    empresa = data.get("empresa", "Entel Perú")
-    puesto = data.get("puesto", "IA Engineer")
-    nombre_entrevistador = data.get("nombre_entrevistador", None)
-    
-    # Opciones de búsqueda (por defecto todas activadas para test)
-    buscar_empresa = data.get("buscar_empresa", True)
-    buscar_mercado = data.get("buscar_puesto_mercado", True)
-    buscar_entrevistador = data.get("buscar_entrevistador", False)
-    
-    try:
-        resultados = {}
-        
-        # Test búsqueda de empresa
-        if buscar_empresa:
-            print(f"🔍 Testing búsqueda de empresa: {empresa}")
-            query_empresa = crear_prompt_empresa(empresa, puesto)
-            resultado_empresa = buscar_con_sonar(query_empresa)
-            resultados["empresa"] = {
-                "query_enviado": query_empresa,
-                "contenido": resultado_empresa.contenido,
-                "fuentes": resultado_empresa.fuentes,
-                "tiempo_respuesta": resultado_empresa.tiempo_respuesta,
-                "modelo_usado": resultado_empresa.modelo_usado,
-                "numero_fuentes": len(resultado_empresa.fuentes)
-            }
-        
-        # Test búsqueda de mercado
-        if buscar_mercado:
-            print(f"🔍 Testing búsqueda de mercado: {puesto}")
-            query_mercado = crear_prompt_puesto_mercado(puesto)
-            resultado_mercado = buscar_con_sonar(query_mercado)
-            resultados["mercado"] = {
-                "query_enviado": query_mercado,
-                "contenido": resultado_mercado.contenido,
-                "fuentes": resultado_mercado.fuentes,
-                "tiempo_respuesta": resultado_mercado.tiempo_respuesta,
-                "modelo_usado": resultado_mercado.modelo_usado,
-                "numero_fuentes": len(resultado_mercado.fuentes)
-            }
-        
-        # Test búsqueda de entrevistador
-        if buscar_entrevistador and nombre_entrevistador:
-            print(f"🔍 Testing búsqueda de entrevistador: {nombre_entrevistador}")
-            query_entrevistador = crear_prompt_entrevistador_personal(nombre_entrevistador, empresa)
-            resultado_entrevistador = buscar_con_sonar(query_entrevistador)
-            resultados["entrevistador"] = {
-                "query_enviado": query_entrevistador,
-                "contenido": resultado_entrevistador.contenido,
-                "fuentes": resultado_entrevistador.fuentes,
-                "tiempo_respuesta": resultado_entrevistador.tiempo_respuesta,
-                "modelo_usado": resultado_entrevistador.modelo_usado,
-                "numero_fuentes": len(resultado_entrevistador.fuentes)
-            }
-        
-        # Calcular estadísticas totales
-        total_fuentes = sum(resultado.get("numero_fuentes", 0) for resultado in resultados.values())
-        tiempo_total = sum(resultado.get("tiempo_respuesta", 0) for resultado in resultados.values())
-        
-        return {
-            "tipo_busqueda": "opcionales_separadas",
-            "parametros": {
-                "empresa": empresa,
-                "puesto": puesto,
-                "nombre_entrevistador": nombre_entrevistador,
-                "buscar_empresa": buscar_empresa,
-                "buscar_mercado": buscar_mercado,
-                "buscar_entrevistador": buscar_entrevistador
-            },
-            "resultados": resultados,
-            "estadisticas": {
-                "busquedas_realizadas": len(resultados),
-                "total_fuentes": total_fuentes,
-                "tiempo_total": tiempo_total,
-                "calidad_investigacion": "Alta" if total_fuentes >= 6 else "Media" if total_fuentes >= 3 else "Baja"
-            }
-        }
-        
-    except Exception as e:
-        return {"error": str(e)}
-
 @app.post("/generar-entrevista", response_model=RespuestaEntrevista)
 async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
     """Endpoint principal para generar preguntas de entrevista desde texto libre con investigación web integral"""
@@ -1029,7 +745,7 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         # 1. Extraer información estructurada del texto con OpenAI
         propuesta = extraer_informacion_propuesta(propuesta_texto.texto)
         
-        print(f"\n📋 PROPUESTA LABORAL EXTRAÍDA:")
+        print("\n📋 PROPUESTA LABORAL EXTRAÍDA:")
         print(f"{'='*80}")
         print(f"🏢 Empresa: {propuesta.empresa}")
         print(f"💼 Puesto: {propuesta.puesto}")
@@ -1055,11 +771,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         total_fuentes = len(info_integral.fuentes)
         tiempo_total = info_integral.tiempo_respuesta
         
-        print(f"\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
+        print("\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
         print(f"{'='*80}")
         print(f"🔍 Búsqueda Integral Completa ({total_fuentes}/3 fuentes): {tiempo_total:.2f}s - {info_integral.modelo_usado}")
-        print(f"🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
-        print(f"📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
+        print("🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
+        print("📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
         print(f"📚 Total: {total_fuentes} fuentes específicas en {tiempo_total:.2f}s")
         print(f"{'='*80}")
         print(f"📚 Investigación integral completa con MÁXIMA CALIDAD: {total_fuentes} fuentes")
@@ -1076,7 +792,6 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         # 6. Construir respuesta completa
         respuesta = RespuestaEntrevista(
             preguntas=preguntas,
-            consejos_conexion=[],  # No aplicable en búsqueda integral
             informacion_empresa={
                 "nombre": propuesta.empresa,
                 "informacion_encontrada": info_integral.contenido[:800] + "..." if len(info_integral.contenido) > 800 else info_integral.contenido,
@@ -1103,11 +818,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         print(f"\n{'='*80}")
         print("🎉 PROCESO COMPLETADO EXITOSAMENTE CON MÁXIMA CALIDAD")
         print(f"{'='*80}")
-        print(f"📊 Resultados finales:")
+        print("📊 Resultados finales:")
         print(f"   • {len(preguntas)} preguntas contextualizadas con información integral de la empresa")
         print(f"   • {total_fuentes}/3 fuentes de alta calidad consultadas en una sola búsqueda")
         print(f"   • Tiempo total: {tiempo_total:.2f} segundos")
-        print(f"   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
+        print("   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
         print(f"   • Calidad investigación: {'Alta' if total_fuentes >= 3 else 'Media' if total_fuentes >= 2 else 'Baja'}")
         print(f"{'='*80}")
         print(f"🚀 Respuesta construida con MÁXIMA CALIDAD: {len(preguntas)} preguntas, {total_fuentes} fuentes")
