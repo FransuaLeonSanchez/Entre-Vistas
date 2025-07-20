@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Sparkles, 
@@ -46,14 +46,10 @@ export default function GenerarPage() {
 
   const [recruiterName, setRecruiterName] = useState('')
 
-<<<<<<< HEAD
   // Expand sidebar when component mounts
   useEffect(() => {
     window.dispatchEvent(new Event('expandSidebar'))
   }, [])
-
-=======
->>>>>>> 5392eb5936b6096cb28c83eae18352196e64b35b
   const tools = [
     {
       key: 'companyInfo',
@@ -113,7 +109,7 @@ export default function GenerarPage() {
               <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
             <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Generarando Entre Vistas
+              Generando Entrevistas
             </h1>
           </div>
           <p className="text-xl text-gray-600 font-medium">
