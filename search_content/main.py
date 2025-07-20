@@ -12,7 +12,6 @@ from datetime import datetime
 
 # Cargar variables de entorno
 load_dotenv()
-
 app = FastAPI()
 
 # Configurar CORS
