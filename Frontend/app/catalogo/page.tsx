@@ -174,9 +174,9 @@ export default function CatalogoPage() {
   const [ratingFilter, setRatingFilter] = useState(0)
   const [companyFilter, setCompanyFilter] = useState("todas")
 
-  // Collapse sidebar when component mounts
+  // Expand sidebar when component mounts
   useEffect(() => {
-    window.dispatchEvent(new Event('collapseSidebar'))
+    window.dispatchEvent(new Event('expandSidebar'))
   }, [])
 
   const filteredAgents = agents

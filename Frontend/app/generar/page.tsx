@@ -46,9 +46,9 @@ export default function GenerarPage() {
 
   const [recruiterName, setRecruiterName] = useState('')
 
-  // Collapse sidebar when component mounts
+  // Expand sidebar when component mounts
   useEffect(() => {
-    window.dispatchEvent(new Event('collapseSidebar'))
+    window.dispatchEvent(new Event('expandSidebar'))
   }, [])
 
   const tools = [
@@ -110,7 +110,7 @@ export default function GenerarPage() {
               <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
             <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Generar
+              Generarando Entre Vistas
             </h1>
           </div>
           <p className="text-xl text-gray-600 font-medium">
