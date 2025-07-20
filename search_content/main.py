@@ -586,80 +586,24 @@ CONTEXTO SECTORIAL:
 
 Esta información ayudará a entender el contexto competitivo y las expectativas del mercado para {puesto} en Perú."""
 
-# Función específica para búsqueda de información del reclutador
-def crear_prompt_reclutador(nombre_reclutador: str, empresa: str) -> str:
-    """Busca información específica sobre el reclutador para contextualizar la entrevista"""
-    return f"""Busca información profesional sobre {nombre_reclutador} de {empresa} para contextualizar la entrevista:
-
-INFORMACIÓN PROFESIONAL DEL RECLUTADOR:
-- Perfil profesional de {nombre_reclutador} en {empresa}
-- Posición actual y rol dentro de {empresa}
-- Experiencia profesional y trayectoria en recursos humanos o reclutamiento
-- Especialización en tipos de puestos o sectores específicos
-- Tiempo trabajando en {empresa} y roles anteriores
-
-ESTILO Y ENFOQUE DE RECLUTAMIENTO:
-- Metodología o estilo de entrevistas de {nombre_reclutador}
-- Competencias o habilidades que típicamente evalúa
-- Enfoque en entrevistas técnicas vs. competencias blandas
-- Testimonios o feedback de candidatos previos
-
-CONTEXTO EN {empresa}:
-- Área o departamento donde trabaja {nombre_reclutador}
-- Tipos de posiciones que típicamente maneja en {empresa}
-- Proceso de selección característico que utiliza
-- Criterios de evaluación que suele priorizar
-
-PRESENCIA PROFESIONAL:
-- Perfil en LinkedIn de {nombre_reclutador}
-- Artículos, publicaciones o contenido profesional
-- Participación en eventos o conferencias de RRHH
-- Reconocimientos o logros profesionales
-
-Esta información ayudará a adaptar la preparación de la entrevista al estilo específico del reclutador."""
-
 # Función específica para búsqueda de información personal del entrevistador
 def crear_prompt_entrevistador_personal(nombre_entrevistador: str, empresa: str) -> str:
-    """Busca información personal y amplia sobre el entrevistador como persona para establecer conexión"""
-    return f"""Busca información PERSONAL y completa sobre {nombre_entrevistador} que trabaja en {empresa}, enfocándote en conocer a la PERSONA detrás del profesional:
+    """Busca información general sobre el entrevistador para establecer conexión"""
+    return f"""¿Qué sabes de {nombre_entrevistador}? Busca en internet toda la información posible sobre esta persona de cualquier tipo.
 
-INFORMACIÓN PERSONAL Y PROFESIONAL:
-- Perfil completo de {nombre_entrevistador} como persona y profesional
-- Trasfondo personal, educación y formación de {nombre_entrevistador}
-- Experiencia laboral, trayectoria profesional y especialización
-- Posición actual en {empresa} y responsabilidades
+Busca información general y completa sobre {nombre_entrevistador}:
 
-INTERESES PERSONALES Y PASIONES:
-- Hobbies, aficiones y actividades que disfruta {nombre_entrevistador}
-- Deportes que practica o equipos que sigue
-- Intereses en tecnología, arte, música, literatura, viajes
-- Actividades de tiempo libre y entretenimiento
+- Cualquier información personal, profesional o pública disponible
+- Perfil en redes sociales (LinkedIn, Twitter, Instagram, etc.)
+- Artículos, publicaciones, entrevistas o contenido que haya creado
+- Participación en eventos, conferencias o charlas
+- Educación, experiencia laboral y trayectoria
+- Intereses, hobbies o actividades personales
+- Proyectos, logros o reconocimientos
+- Personalidad, estilo de comunicación y valores
+- Cualquier otra información relevante que encuentres
 
-PRESENCIA EN REDES SOCIALES Y DIGITAL:
-- Perfil en LinkedIn con contenido personal y profesional
-- Presencia en Twitter, Instagram u otras redes sociales
-- Publicaciones, artículos o contenido que comparte
-- Opiniones, pensamientos o reflexiones que expresa públicamente
-
-VALORES Y PERSPECTIVAS PERSONALES:
-- Causas sociales o valores que defiende {nombre_entrevistador}
-- Filosofía de trabajo y enfoque personal hacia el liderazgo
-- Participación en comunidades, eventos o iniciativas
-- Reconocimientos personales o logros destacados
-
-ESTILO PERSONAL Y COMUNICACIÓN:
-- Forma de comunicarse y expresarse públicamente
-- Estilo de liderazgo o interacción con equipos
-- Anécdotas, experiencias o historias personales compartidas
-- Personalidad y características distintivas
-
-CONEXIONES Y NETWORKING:
-- Industrias o sectores donde tiene influencia
-- Mentores, colegas o figuras que admira
-- Participación en conferencias, eventos o charlas
-- Colaboraciones o proyectos personales
-
-Esta información ayudará a establecer una conexión más personal y humana durante la entrevista, conociendo los intereses, valores y personalidad de {nombre_entrevistador}."""
+Proporciona toda la información disponible sobre {nombre_entrevistador} para entender su personalidad y estilo como entrevistador."""
 
 # Función para generar preguntas con OpenAI
 def generar_preguntas(propuesta: PropuestaLaboral, informacion_integral: str) -> dict:
@@ -711,15 +655,22 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
     - INCORPORA datos concretos, nombres de productos, tecnologías, proyectos o metodologías encontradas
     - Las preguntas evalúan al candidato USANDO el contexto específico como marco de referencia
     
-    Responde en formato JSON con las siguientes claves:
-    - "preguntas": lista de strings con las preguntas específicas
+    Responde ÚNICAMENTE en formato JSON válido con esta estructura exacta:
+    {{
+        "preguntas": [
+            "texto de pregunta 1 como string",
+            "texto de pregunta 2 como string"
+        ]
+    }}
+    
+    IMPORTANTE: Las preguntas deben ser strings directos, NO objetos con llaves.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas de entrevista CONTEXTUALIZADAS y específicas. SIEMPRE incluyes información específica de la empresa investigada en cada pregunta. Las preguntas deben incorporar tecnologías, proyectos, cultura y contexto real de la empresa. Responde SIEMPRE en formato JSON válido."},
+                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas de entrevista CONTEXTUALIZADAS y específicas. SIEMPRE incluyes información específica de la empresa investigada en cada pregunta. Las preguntas deben incorporar tecnologías, proyectos, cultura y contexto real de la empresa. Responde SIEMPRE en formato JSON válido con arrays de strings, NUNCA objetos con llaves."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
@@ -729,8 +680,21 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
         import json
         resultado = json.loads(response.choices[0].message.content)
         
-        # Mostrar preguntas generadas
-        preguntas = resultado.get('preguntas', [])
+        # Procesar preguntas para asegurar formato correcto
+        preguntas_raw = resultado.get('preguntas', [])
+        preguntas = []
+        
+        for pregunta in preguntas_raw:
+            if isinstance(pregunta, dict):
+                # Si OpenAI devolvió un objeto, extraer el texto de la pregunta
+                texto_pregunta = pregunta.get('pregunta', str(pregunta))
+                preguntas.append(texto_pregunta)
+            elif isinstance(pregunta, str):
+                # Si ya es string, usarlo directamente
+                preguntas.append(pregunta)
+            else:
+                # Convertir a string como fallback
+                preguntas.append(str(pregunta))
         
         print(f"✅ Preguntas contextualizadas generadas: {len(preguntas)} preguntas potenciadas con información específica de {propuesta.empresa}")
         
@@ -742,7 +706,8 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
                 print()
             print(f"{'='*80}")
         
-        return resultado
+        # Devolver resultado con formato corregido
+        return {"preguntas": preguntas}
     except Exception as e:
         print(f"❌ Error en OpenAI: {e}")
         return {"preguntas": []}
@@ -788,42 +753,55 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
     {contexto_completo}
     
     INSTRUCCIONES ESPECÍFICAS:
-    Basándote en toda la información investigada, genera 10-12 preguntas de EVALUACIÓN CONTEXTUALIZADAS:
+    Genera 10-12 preguntas de EVALUACIÓN CONTEXTUALIZADAS basándote PRINCIPALMENTE en la información de la EMPRESA y el MERCADO LABORAL:
+    
+    FUENTES PRINCIPALES PARA LAS PREGUNTAS:
+    - Información específica de {propuesta.empresa}: tecnologías, cultura, proyectos, metodologías
+    - Análisis del mercado laboral para {propuesta.puesto}: tendencias, competencias demandadas, tecnologías populares
     
     TIPOS DE PREGUNTAS:
-    - 3-4 preguntas técnicas incorporando tecnologías específicas de {propuesta.empresa} y del mercado
-    - 3-4 preguntas situacionales basadas en la cultura de {propuesta.empresa} y personalidad del entrevistador
-    - 4-5 preguntas de competencias que combinen información de la empresa, mercado y conexión personal con el entrevistador
+    - 4-5 preguntas técnicas incorporando tecnologías específicas de {propuesta.empresa} y tecnologías demandadas en el mercado
+    - 3-4 preguntas situacionales basadas en la cultura y metodologías de {propuesta.empresa}
+    - 3-4 preguntas de competencias que combinen los retos específicos de {propuesta.empresa} con las competencias valoradas en el mercado
     
-    CÓMO POTENCIAR LAS PREGUNTAS:
-    - INCLUYE tecnologías y metodologías específicas de {propuesta.empresa}
-    - INCORPORA tendencias del mercado laboral para {propuesta.puesto} en Perú
-    - ADAPTA el enfoque para establecer conexión personal con el entrevistador (intereses, valores, personalidad)
-    - MENCIONA competencias valoradas en el mercado peruano
-    - REFERENCIA proyectos y retos específicos de {propuesta.empresa}
-    - CREA oportunidades para conversación natural sobre intereses comunes
+    CÓMO ESTRUCTURAR LAS PREGUNTAS:
+    - PRIORIZA información específica de {propuesta.empresa} (tecnologías, proyectos, cultura, metodologías)
+    - INCORPORA tendencias y competencias del mercado laboral para {propuesta.puesto} en Perú
+    - MENCIONA herramientas, frameworks y tecnologías específicas encontradas
+    - REFERENCIA proyectos actuales, retos reales y contexto específico de {propuesta.empresa}
     
-    ESTRATEGIA DE CONEXIÓN PERSONAL:
-    - Si hay información del entrevistador, sugiere formas sutiles de mencionar intereses compartidos
-    - Incluye preguntas que permitan mostrar conocimiento sobre la persona del entrevistador
-    - Adapta el estilo comunicativo según la personalidad identificada del entrevistador
+    USO DE LA INFORMACIÓN DEL ENTREVISTADOR:
+    La información del entrevistador es SOLO para contexto y consejos de conexión personal, NO para generar las preguntas principales.
+    - Si hay información del entrevistador, úsala para generar consejos de conexión
+    - Adapta el tono/estilo de las preguntas según la personalidad del entrevistador
+    - Sugiere temas de conversación casual basados en sus intereses
     
     REQUISITOS:
-    - Cada pregunta debe estar contextualizada con información específica
-    - Combina inteligentemente los diferentes tipos de información
-    - Evita preguntas genéricas
-    - Enfócate en evaluación práctica y específica con conexión humana
+    - Las preguntas deben evaluar competencias técnicas y profesionales específicas
+    - Basar TODAS las preguntas en información concreta de empresa + mercado
+    - Evita preguntas genéricas o que no tengan contexto específico
+    - Genera consejos separados para establecer conexión personal con el entrevistador
     
-    Responde en formato JSON con:
-    - "preguntas": lista de strings con las preguntas específicas
-    - "consejos_conexion": lista de consejos para establecer conexión personal (si hay info del entrevistador)
+    Responde ÚNICAMENTE en formato JSON válido con esta estructura exacta:
+    {{
+        "preguntas": [
+            "texto de pregunta 1 como string",
+            "texto de pregunta 2 como string"
+        ],
+        "consejos_conexion": [
+            "consejo 1 como string",
+            "consejo 2 como string"
+        ]
+    }}
+    
+    IMPORTANTE: Las preguntas deben ser strings directos, NO objetos con llaves.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas contextualizadas combinando información de empresa, mercado y entrevistador. Creas conexiones humanas auténticas. Responde SIEMPRE en formato JSON válido."},
+                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas contextualizadas combinando información de empresa, mercado y entrevistador. Creas conexiones humanas auténticas. Responde SIEMPRE en formato JSON válido con arrays de strings, NUNCA objetos con llaves."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
@@ -833,13 +811,47 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
         import json
         resultado = json.loads(response.choices[0].message.content)
         
-        preguntas = resultado.get('preguntas', [])
-        consejos = resultado.get('consejos_conexion', [])
+        # Procesar preguntas para asegurar formato correcto
+        preguntas_raw = resultado.get('preguntas', [])
+        preguntas = []
+        
+        for pregunta in preguntas_raw:
+            if isinstance(pregunta, dict):
+                # Si OpenAI devolvió un objeto, extraer el texto de la pregunta
+                texto_pregunta = pregunta.get('pregunta', str(pregunta))
+                preguntas.append(texto_pregunta)
+            elif isinstance(pregunta, str):
+                # Si ya es string, usarlo directamente
+                preguntas.append(pregunta)
+            else:
+                # Convertir a string como fallback
+                preguntas.append(str(pregunta))
+        
+        # Procesar consejos de conexión
+        consejos_raw = resultado.get('consejos_conexion', [])
+        consejos = []
+        
+        for consejo in consejos_raw:
+            if isinstance(consejo, dict):
+                # Si es objeto, extraer el texto
+                texto_consejo = consejo.get('consejo', str(consejo))
+                consejos.append(texto_consejo)
+            elif isinstance(consejo, str):
+                # Si ya es string, usarlo directamente
+                consejos.append(consejo)
+            else:
+                # Convertir a string como fallback
+                consejos.append(str(consejo))
+        
         print(f"✅ Preguntas contextualizadas generadas: {len(preguntas)} preguntas con contexto múltiple")
         if consejos:
             print(f"✅ Consejos de conexión personal generados: {len(consejos)} consejos")
         
-        return resultado
+        # Devolver resultado con formato corregido
+        return {
+            "preguntas": preguntas,
+            "consejos_conexion": consejos
+        }
     except Exception as e:
         print(f"❌ Error en OpenAI: {e}")
         return {"preguntas": [], "consejos_conexion": []}
@@ -1255,7 +1267,27 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
                 "busqueda_web_realizada": len(busquedas_realizadas) > 0,
                 "tiempo_total": tiempo_total,
                 "total_fuentes": total_fuentes,
-                "busquedas_completadas": len(busquedas_realizadas)
+                "busquedas_completadas": len(busquedas_realizadas),
+                "resultados_busquedas": {
+                    "empresa": {
+                        "contenido": info_empresa[:1000] + "..." if len(info_empresa) > 1000 else info_empresa,
+                        "activada": propuesta_opciones.buscar_empresa,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "empresa"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "empresa"), 0.0)
+                    },
+                    "mercado": {
+                        "contenido": info_mercado[:1000] + "..." if len(info_mercado) > 1000 else info_mercado,
+                        "activada": propuesta_opciones.buscar_puesto_mercado,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "mercado"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "mercado"), 0.0)
+                    },
+                    "entrevistador": {
+                        "contenido": info_entrevistador[:1000] + "..." if len(info_entrevistador) > 1000 else info_entrevistador,
+                        "activada": propuesta_opciones.buscar_entrevistador,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "entrevistador"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "entrevistador"), 0.0)
+                    }
+                }
             }
         )
         

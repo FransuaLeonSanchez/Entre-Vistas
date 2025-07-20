@@ -297,10 +297,10 @@
                     
                     <div class="checkbox-item">
                         <input type="checkbox" id="buscarEntrevistador">
-                        <label for="buscarEntrevistador">Información Personal del Entrevistador</label>
+                        <label for="buscarEntrevistador">Información General del Entrevistador</label>
                     </div>
                     <div class="checkbox-description">
-                        Intereses personales, hobbies, valores, personalidad y trasfondo para establecer conexión humana
+                        Búsqueda general en internet sobre la persona: información personal, profesional, redes sociales, cualquier dato disponible
                     </div>
                     
                     <div class="form-group" id="nombreEntrevistadorGroup" style="margin-top: 15px; display: none;">
@@ -337,6 +337,29 @@
             <div class="info-empresa" id="infoEmpresa">
                 <h3>🏢 Información Encontrada sobre la Empresa</h3>
                 <div id="infoEmpresaContent"></div>
+            </div>
+            
+            <!-- Resultados de las 3 búsquedas por separado -->
+            <div class="section" id="resultadosBusquedas">
+                <h3>🔍 Resultados Detallados de las Búsquedas Web</h3>
+                
+                <div class="info-empresa" id="busquedaEmpresa" style="display: none;">
+                    <h4>🏢 Búsqueda: Información de la Empresa</h4>
+                    <div id="busquedaEmpresaContent"></div>
+                    <div class="busquedas-status" id="busquedaEmpresaStats"></div>
+                </div>
+                
+                <div class="info-empresa" id="busquedaMercado" style="display: none; background-color: #f0f8ff;">
+                    <h4>📈 Búsqueda: Mercado Laboral del Puesto</h4>
+                    <div id="busquedaMercadoContent"></div>
+                    <div class="busquedas-status" id="busquedaMercadoStats"></div>
+                </div>
+                
+                <div class="info-empresa" id="busquedaEntrevistador" style="display: none; background-color: #f8fff8;">
+                    <h4>👤 Búsqueda: Información del Entrevistador</h4>
+                    <div id="busquedaEntrevistadorContent"></div>
+                    <div class="busquedas-status" id="busquedaEntrevistadorStats"></div>
+                </div>
             </div>
             
             <div class="section">
@@ -507,13 +530,67 @@
                 busquedasStatus.style.display = 'none';
             }
             
-            // Mostrar información de la empresa
+            // Mostrar información de la empresa (resumen)
             const infoEmpresaContent = document.getElementById('infoEmpresaContent');
             infoEmpresaContent.innerHTML = `
                 <strong>${data.informacion_empresa.nombre}</strong><br>
                 ${data.informacion_empresa.informacion_encontrada || 'No se encontró información adicional'}<br>
                 <small><strong>Fuentes consultadas:</strong> ${data.informacion_empresa.fuentes_consultadas || 0}</small>
             `;
+            
+            // Mostrar resultados detallados de las 3 búsquedas por separado
+            if (endpointType === 'opciones' && data.investigacion_detallada.resultados_busquedas) {
+                const resultados = data.investigacion_detallada.resultados_busquedas;
+                
+                // Mostrar/ocultar secciones según las búsquedas activadas
+                // 1. Búsqueda de Empresa
+                const busquedaEmpresa = document.getElementById('busquedaEmpresa');
+                if (resultados.empresa.activada && resultados.empresa.contenido) {
+                    const busquedaEmpresaContent = document.getElementById('busquedaEmpresaContent');
+                    const busquedaEmpresaStats = document.getElementById('busquedaEmpresaStats');
+                    
+                    busquedaEmpresaContent.innerHTML = resultados.empresa.contenido || 'No se encontró información específica';
+                    busquedaEmpresaStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.empresa.fuentes} fuentes | 
+                        ${resultados.empresa.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaEmpresa.style.display = 'block';
+                } else {
+                    busquedaEmpresa.style.display = 'none';
+                }
+                
+                // 2. Búsqueda de Mercado
+                const busquedaMercado = document.getElementById('busquedaMercado');
+                if (resultados.mercado.activada && resultados.mercado.contenido) {
+                    const busquedaMercadoContent = document.getElementById('busquedaMercadoContent');
+                    const busquedaMercadoStats = document.getElementById('busquedaMercadoStats');
+                    
+                    busquedaMercadoContent.innerHTML = resultados.mercado.contenido || 'No se encontró información específica';
+                    busquedaMercadoStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.mercado.fuentes} fuentes | 
+                        ${resultados.mercado.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaMercado.style.display = 'block';
+                } else {
+                    busquedaMercado.style.display = 'none';
+                }
+                
+                // 3. Búsqueda de Entrevistador
+                const busquedaEntrevistador = document.getElementById('busquedaEntrevistador');
+                if (resultados.entrevistador.activada && resultados.entrevistador.contenido) {
+                    const busquedaEntrevistadorContent = document.getElementById('busquedaEntrevistadorContent');
+                    const busquedaEntrevistadorStats = document.getElementById('busquedaEntrevistadorStats');
+                    
+                    busquedaEntrevistadorContent.innerHTML = resultados.entrevistador.contenido || 'No se encontró información específica';
+                    busquedaEntrevistadorStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.entrevistador.fuentes} fuentes | 
+                        ${resultados.entrevistador.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaEntrevistador.style.display = 'block';
+                } else {
+                    busquedaEntrevistador.style.display = 'none';
+                }
+            }
             
             // Mostrar preguntas
             const preguntasDiv = document.getElementById('preguntas');
