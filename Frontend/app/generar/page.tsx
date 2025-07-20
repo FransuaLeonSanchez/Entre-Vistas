@@ -139,11 +139,11 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
 
   const testConnection = async () => {
     try {
-      const response = await fetch('http://localhost:8000/')
+      const response = await fetch('http://localhost:8001/')
       const data = await response.json()
       alert(`✅ Conexión exitosa: ${data.mensaje}`)
     } catch (err) {
-      alert(`❌ Error de conexión: ${err}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8000`)
+      alert(`❌ Error de conexión: ${err}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8001`)
     }
   }
 
@@ -168,7 +168,7 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
         nombre_entrevistador: null
       }
 
-      const response = await fetch('http://localhost:8000/generar-entrevista-con-opciones', {
+      const response = await fetch('http://localhost:8001/generar-entrevista-con-opciones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
