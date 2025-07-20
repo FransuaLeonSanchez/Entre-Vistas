@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Star,
@@ -174,6 +174,11 @@ export default function CatalogoPage() {
   const [ratingFilter, setRatingFilter] = useState(0)
   const [companyFilter, setCompanyFilter] = useState("todas")
 
+  // Collapse sidebar when component mounts
+  useEffect(() => {
+    window.dispatchEvent(new Event('collapseSidebar'))
+  }, [])
+
   const filteredAgents = agents
     .filter(agent => {
       // Filtro de búsqueda por texto
@@ -227,12 +232,12 @@ export default function CatalogoPage() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen flex justify-center p-4 sm:p-6 lg:p-8">
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="max-w-7xl mx-auto space-y-8"
+        className="w-full max-w-7xl space-y-8 py-8"
       >
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center space-y-4">

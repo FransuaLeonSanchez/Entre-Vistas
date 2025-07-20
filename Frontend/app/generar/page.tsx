@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Sparkles, 
@@ -46,6 +46,11 @@ export default function GenerarPage() {
 
   const [recruiterName, setRecruiterName] = useState('')
 
+  // Collapse sidebar when component mounts
+  useEffect(() => {
+    window.dispatchEvent(new Event('collapseSidebar'))
+  }, [])
+
   const tools = [
     {
       key: 'companyInfo',
@@ -87,12 +92,12 @@ export default function GenerarPage() {
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen top-100 flex items-center justify-center p-8">
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="max-w-4xl mx-auto space-y-8"
+        className="w-full max-w-4xl mx-auto space-y-8"
       >
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center space-y-4">

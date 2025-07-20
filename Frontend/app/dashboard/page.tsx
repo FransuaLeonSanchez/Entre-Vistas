@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   TrendingUp,
@@ -65,15 +65,20 @@ export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("This month")
   const [activeTab, setActiveTab] = useState("overview")
 
+  // Collapse sidebar when component mounts
+  useEffect(() => {
+    window.dispatchEvent(new Event('collapseSidebar'))
+  }, [])
+
   const maxInterviews = Math.max(...performanceData.map(d => d.interviews))
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen flex justify-center p-8">
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="max-w-7xl mx-auto space-y-8"
+        className="w-full max-w-7xl space-y-8 py-8"
       >
         {/* Header */}
         <motion.div variants={fadeInUp} className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
