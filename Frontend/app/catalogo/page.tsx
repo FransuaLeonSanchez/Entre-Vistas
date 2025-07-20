@@ -455,7 +455,7 @@ export default function CatalogoPage() {
             <div className="flex flex-wrap gap-2">
               {searchTerm && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full">
-                  🔍 "{searchTerm}"
+                  🔍 &quot;{searchTerm}&quot;
                   <button onClick={() => setSearchTerm("")}>
                     <X className="w-3 h-3" />
                   </button>
