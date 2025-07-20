@@ -43,6 +43,10 @@ export default function ReunionPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   
+  // Camera states
+  const [isCameraLoading, setIsCameraLoading] = useState(false)
+  const [isCameraReady, setIsCameraReady] = useState(false)
+  
   // Transcription panel states
   const [transcriptionOpen, setTranscriptionOpen] = useState(true)
   const [transcriptionMessages, setTranscriptionMessages] = useState<Array<{
@@ -57,17 +61,32 @@ export default function ReunionPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const transcriptionEndRef = useRef<HTMLDivElement | null>(null)
   const sessionIdRef = useRef<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
 
   // Auto-collapse sidebar on mount
   useEffect(() => {
     // Dispatch event to collapse sidebar
     window.dispatchEvent(new CustomEvent('collapseSidebar'))
   }, [])
-  
+
   // Auto-scroll transcription when new messages arrive
   useEffect(() => {
     transcriptionEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [transcriptionMessages])
+  
+  // Initialize camera when component mounts and camera is on
+  useEffect(() => {
+    if (isCameraOn) {
+      startCamera()
+    } else {
+      stopCamera()
+    }
+    
+    return () => {
+      stopCamera()
+    }
+  }, [isCameraOn])
 
   // Connect to WebSocket
   const connectWebSocket = (forceNewSession = false) => {
@@ -134,7 +153,7 @@ export default function ReunionPage() {
           console.log('Processing started:', data.type)
           setIsProcessing(true)
           // Timeout de seguridad para evitar bloqueos
-          setTimeout(() => {
+    setTimeout(() => {
             setIsProcessing(false)
           }, 10000) // 10 segundos máximo
           break
@@ -348,6 +367,66 @@ export default function ReunionPage() {
     }
   }
 
+  // Start camera
+  const startCamera = async () => {
+    setIsCameraLoading(true)
+    setIsCameraReady(false)
+    
+    try {
+      // Reducir resolución para mejor rendimiento
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 640, max: 640 },
+          height: { ideal: 480, max: 480 },
+          facingMode: 'user',
+          frameRate: { ideal: 15, max: 30 }
+        },
+        audio: false 
+      })
+      
+      streamRef.current = stream
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        
+        // Esperar a que el video esté listo
+        videoRef.current.onloadedmetadata = () => {
+          setTimeout(() => {
+            setIsCameraReady(true)
+            setIsCameraLoading(false)
+            console.log('Cámara lista')
+          }, 500) // Pequeño delay para asegurar que se muestre
+        }
+      }
+      
+      console.log('Stream de cámara obtenido')
+    } catch (error) {
+      console.error('Error al acceder a la cámara:', error)
+      setIsCameraOn(false)
+      setIsCameraLoading(false)
+      setIsCameraReady(false)
+      alert('No se pudo acceder a la cámara. Por favor, verifica los permisos.')
+    }
+  }
+  
+  // Stop camera
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop()
+      })
+      streamRef.current = null
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    
+    setIsCameraReady(false)
+    setIsCameraLoading(false)
+    console.log('Cámara detenida')
+  }
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 overflow-hidden">
       {/* Main Content Area */}
@@ -460,11 +539,11 @@ export default function ReunionPage() {
 
           {/* Controls positioned relative to avatar */}
           {isStarted && (
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
               className="absolute top-80 transform -translate-x-1/2 flex flex-col items-center gap-4"
-            >
+          >
             {/* Control buttons row */}
             <div className="flex items-center gap-4">
             <motion.button
@@ -543,12 +622,48 @@ export default function ReunionPage() {
           className="absolute bottom-4 left-40 w-64 h-48 bg-gray-800 rounded-xl overflow-hidden border-2 border-white/20"
         >
           {isCameraOn ? (
-            <div className="relative w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-              <Camera className="w-12 h-12 text-gray-400" />
+            <div className="relative w-full h-full bg-gray-800">
+              {/* Video element */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover transition-opacity duration-300 ${
+                  isCameraReady ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ transform: 'scaleX(-1)' }} // Mirror effect
+              />
+              
+              {/* Overlay elements - Always visible */}
+              {isCameraReady && (
+                <>
               <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm rounded px-3 py-1">
                 <span className="text-white text-sm">Tú</span>
               </div>
-              <div className="absolute top-3 right-3 bg-green-500 w-3 h-3 rounded-full" />
+                  <div className="absolute top-3 right-3 bg-green-500 w-3 h-3 rounded-full animate-pulse" />
+                </>
+              )}
+              
+              {/* Loading state while camera initializes */}
+              {isCameraLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-white text-sm">Iniciando cámara...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Error state if camera fails */}
+              {!isCameraLoading && !isCameraReady && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Camera className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm">Cámara no disponible</p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="w-full h-full bg-black flex items-center justify-center">
@@ -671,12 +786,12 @@ export default function ReunionPage() {
                 <CheckCircle className="w-5 h-5 text-primary-500" />
                 Preguntas de Entrevista BCP
               </h3>
-              <button
-                onClick={() => setQuestionsOpen(false)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+                <button
+                  onClick={() => setQuestionsOpen(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
             </div>
 
             {/* Content */}
@@ -694,7 +809,7 @@ export default function ReunionPage() {
                   <div className="space-y-3">
                     <h4 className="text-sm font-medium text-gray-700">Temas de la entrevista:</h4>
                     {interviewQuestions.map((question, index) => (
-                      <motion.div
+                <motion.div
                         key={question.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -719,13 +834,13 @@ export default function ReunionPage() {
                       </motion.div>
                     ))}
                   </div>
-                  
+
                   {/* Info note */}
                   <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <p className="text-xs text-amber-700">
                       <strong>Nota:</strong> María realizará estas preguntas durante la conversación. Responde de forma natural y completa.
                     </p>
-                  </div>
+                </div>
                 </>
               )}
             </div>

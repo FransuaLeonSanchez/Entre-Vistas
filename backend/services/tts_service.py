@@ -75,15 +75,16 @@ Eres la imagen vocal de BCP en el proceso de selección para Analista de Datos."
     def _generate_speech_sync(self, text: str) -> Optional[bytes]:
         """Genera audio usando gpt-4o-mini-audio-preview con instrucciones emocionales"""
         try:
-            # Usar chat completions API con modelo audio preview según documentación
-            response = self.client.chat.completions.create(
-                model=self.model,
-                modalities=["text", "audio"],
-                audio={
-                    "voice": self.voice,
-                    "format": "mp3"
-                },
-                messages=[
+            # Para el mensaje inicial, usar un prompt más simple
+            if text == "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?":
+                messages = [
+                    {
+                        "role": "user",
+                        "content": text  # Solo el texto, sin instrucciones adicionales
+                    }
+                ]
+            else:
+                messages = [
                     {
                         "role": "system",
                         "content": self.system_prompt
@@ -92,9 +93,23 @@ Eres la imagen vocal de BCP en el proceso de selección para Analista de Datos."
                         "role": "user",
                         "content": f"Lee esto en voz alta con el estilo indicado: {text}"
                     }
-                ],
+                ]
+            
+            # Usar chat completions API con modelo audio preview según documentación
+            response = self.client.chat.completions.create(
+                model=self.model,
+                modalities=["text", "audio"],
+                audio={
+                    "voice": self.voice,
+                    "format": "mp3"
+                },
+                messages=messages,
                 max_tokens=1000
             )
+            
+            # Verificar si hay texto en la respuesta (NO debería haberlo)
+            if response.choices[0].message.content:
+                print(f"[TTS WARNING] Se generó texto adicional: {response.choices[0].message.content}")
             
             # Extraer el audio base64 de la respuesta
             if (response.choices[0].message.audio and 

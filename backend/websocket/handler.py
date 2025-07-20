@@ -42,27 +42,32 @@ class WebSocketHandler:
     async def _send_initial_presentation(self, websocket: WebSocket, session_id: str):
         """Envía la presentación inicial de María automáticamente"""
         try:
-            # Mensaje inicial hardcodeado - NO llamar a OpenAI
-            initial_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
+            print(f"[HANDLER] Iniciando presentación para sesión {session_id}")
             
-            # Inicializar la conversación en el chat service
-            # Esto creará la sesión y marcará el mensaje inicial como enviado
-            await self.chat_service.get_response("", session_id)
+            # Obtener el mensaje inicial del chat service (devuelve el mensaje hardcodeado)
+            initial_message = await self.chat_service.get_response("", session_id)
             
-            # Enviar el mensaje de chat inmediatamente
-            await websocket.send_text(json.dumps({
-                "type": "chat_response",
-                "data": initial_message,
-                "timestamp": time.time()
-            }))
+            print(f"[HANDLER] Mensaje recibido del chat service: {initial_message}")
             
-            # Generar y enviar el audio en paralelo
-            asyncio.create_task(self._process_and_send_tts(
-                websocket, initial_message, session_id
-            ))
+            if initial_message:
+                # Enviar el mensaje de chat inmediatamente
+                await websocket.send_text(json.dumps({
+                    "type": "chat_response",
+                    "data": initial_message,
+                    "timestamp": time.time()
+                }))
+                
+                print(f"[HANDLER] Mensaje enviado al frontend")
+                
+                # Generar y enviar el audio en paralelo
+                asyncio.create_task(self._process_and_send_tts(
+                    websocket, initial_message, session_id
+                ))
+            else:
+                print("[HANDLER] No se recibió mensaje inicial del chat service")
                 
         except Exception as e:
-            print(f"Error en presentación inicial: {e}")
+            print(f"[HANDLER] Error en presentación inicial: {e}")
     
     async def disconnect(self, session_id: str):
         if session_id in self.active_sessions:

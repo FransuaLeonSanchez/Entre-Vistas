@@ -73,22 +73,25 @@ Recuerda: Representas al banco más importante del Perú. Mantén siempre un bal
     
     async def get_response(self, message: str, session_id: str) -> Optional[str]:
         try:
-            # Primera interacción: crear conversación y enviar mensaje de presentación
+            # Primera interacción: crear conversación
             if session_id not in self.conversations:
                 self.conversations[session_id] = [
                     {"role": "system", "content": self.system_prompt}
                 ]
                 self.initial_message_sent[session_id] = False
             
-            # Si no se ha enviado el mensaje inicial, enviarlo
+            # SIEMPRE devolver el mensaje hardcodeado en la primera interacción
             if not self.initial_message_sent.get(session_id, False):
                 intro_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
                 self.conversations[session_id].append({"role": "assistant", "content": intro_message})
                 self.initial_message_sent[session_id] = True
+                print(f"[CHAT SERVICE] Enviando mensaje inicial hardcodeado para sesión {session_id}")
+                print(f"[CHAT SERVICE] Mensaje: {intro_message}")
+                # IMPORTANTE: Retornar inmediatamente sin llamar a OpenAI
                 return intro_message
             
-            # Solo procesar si hay un mensaje real del usuario
-            if message.strip():
+            # Solo procesar con OpenAI si hay un mensaje real del usuario Y ya se envió el inicial
+            if message.strip() and self.initial_message_sent.get(session_id, False):
                 self.conversations[session_id].append({"role": "user", "content": message})
             
                 response = self.client.chat.completions.create(
@@ -109,7 +112,7 @@ Recuerda: Representas al banco más importante del Perú. Mantén siempre un bal
                 
                 return assistant_message
             
-            # Si no hay mensaje del usuario después del inicial, no hacer nada
+            # Si no hay mensaje o es el primer mensaje vacío, no hacer nada
             return None
             
         except Exception as e:

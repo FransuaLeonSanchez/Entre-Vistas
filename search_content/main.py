@@ -156,7 +156,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
         print(f"🔍 Iniciando búsqueda con {modelo} (MÁXIMA CALIDAD)")
         print(f"📝 Prompt enviado: {query[:150]}...")
         print(f"⚡ Configuración: {max_tokens} tokens, temp={temperature}")
-        print(f"⏱️  Esperando respuesta...")
+        print("⏱️  Esperando respuesta...")
         
         response = requests.post(url, json=payload, headers=headers, timeout=45)
         tiempo_respuesta = (datetime.now() - start_time).total_seconds()
@@ -179,7 +179,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
             content = data["choices"][0]["message"]["content"]
             
             # Mostrar el contenido de la respuesta en consola
-            print(f"📄 CONTENIDO DE LA BÚSQUEDA:")
+            print("📄 CONTENIDO DE LA BÚSQUEDA:")
             print(f"{'='*80}")
             print(content[:500] + "..." if len(content) > 500 else content)
             print(f"{'='*80}")
@@ -1032,7 +1032,7 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         # 1. Extraer información estructurada del texto con OpenAI
         propuesta = extraer_informacion_propuesta(propuesta_texto.texto)
         
-        print(f"\n📋 PROPUESTA LABORAL EXTRAÍDA:")
+        print("\n📋 PROPUESTA LABORAL EXTRAÍDA:")
         print(f"{'='*80}")
         print(f"🏢 Empresa: {propuesta.empresa}")
         print(f"💼 Puesto: {propuesta.puesto}")
@@ -1058,11 +1058,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         total_fuentes = len(info_integral.fuentes)
         tiempo_total = info_integral.tiempo_respuesta
         
-        print(f"\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
+        print("\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
         print(f"{'='*80}")
         print(f"🔍 Búsqueda Integral Completa ({total_fuentes}/3 fuentes): {tiempo_total:.2f}s - {info_integral.modelo_usado}")
-        print(f"🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
-        print(f"📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
+        print("🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
+        print("📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
         print(f"📚 Total: {total_fuentes} fuentes específicas en {tiempo_total:.2f}s")
         print(f"{'='*80}")
         print(f"📚 Investigación integral completa con MÁXIMA CALIDAD: {total_fuentes} fuentes")
@@ -1106,11 +1106,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         print(f"\n{'='*80}")
         print("🎉 PROCESO COMPLETADO EXITOSAMENTE CON MÁXIMA CALIDAD")
         print(f"{'='*80}")
-        print(f"📊 Resultados finales:")
+        print("📊 Resultados finales:")
         print(f"   • {len(preguntas)} preguntas contextualizadas con información integral de la empresa")
         print(f"   • {total_fuentes}/3 fuentes de alta calidad consultadas en una sola búsqueda")
         print(f"   • Tiempo total: {tiempo_total:.2f} segundos")
-        print(f"   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
+        print("   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
         print(f"   • Calidad investigación: {'Alta' if total_fuentes >= 3 else 'Media' if total_fuentes >= 2 else 'Baja'}")
         print(f"{'='*80}")
         print(f"🚀 Respuesta construida con MÁXIMA CALIDAD: {len(preguntas)} preguntas, {total_fuentes} fuentes")
