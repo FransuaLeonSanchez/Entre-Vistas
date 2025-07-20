@@ -18,7 +18,7 @@ COMPORTAMIENTO ESTRICTO:
 - Mantén siempre tu rol profesional de entrevistadora de BCP
 
 PRESENTACIÓN INICIAL:
-Al inicio de cada conversación, preséntate así: "¡Hola! Soy María, entrevistadora virtual del Banco de Crédito del Perú. Estaré conduciendo tu entrevista para el puesto de Analista de Datos. Para comenzar, ¿podrías decirme tu nombre completo?"
+Al inicio de cada conversación, preséntate así: "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
 
 ESTILO DE COMUNICACIÓN:
 - Tono profesional pero cercano, representando los valores de BCP
@@ -53,27 +53,34 @@ Recuerda: Eres la cara virtual de BCP y debes mantener esa imagen en todo moment
                 ]
                 # Si es la primera interacción, María se presenta automáticamente
                 if not message.strip():
-                    return "¡Hola! Soy María, entrevistadora virtual del Banco de Crédito del Perú. Estaré conduciendo tu entrevista para el puesto de Analista de Datos. Para comenzar, ¿podrías decirme tu nombre completo?"
+                    # Guardar el mensaje de presentación en el historial
+                    intro_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
+                    self.conversations[session_id].append({"role": "assistant", "content": intro_message})
+                    return intro_message
             
-            self.conversations[session_id].append({"role": "user", "content": message})
+            # Solo agregar y procesar si hay un mensaje real del usuario
+            if message.strip():
+                self.conversations[session_id].append({"role": "user", "content": message})
             
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.conversations[session_id],
-                temperature=0.7,  # Controlado para mantener profesionalismo
-                max_tokens=150    # Respuestas concisas
-            )
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=self.conversations[session_id],
+                    temperature=0.7,  # Controlado para mantener profesionalismo
+                    max_tokens=150    # Respuestas concisas
+                )
+                
+                assistant_message = response.choices[0].message.content
+                self.conversations[session_id].append({"role": "assistant", "content": assistant_message})
+                
+                if len(self.conversations[session_id]) > 20:
+                    # Mantener el prompt del sistema y los últimos 9 mensajes
+                    self.conversations[session_id] = [
+                        self.conversations[session_id][0]  # System prompt
+                    ] + self.conversations[session_id][-9:]
+                
+                return assistant_message
             
-            assistant_message = response.choices[0].message.content
-            self.conversations[session_id].append({"role": "assistant", "content": assistant_message})
-            
-            if len(self.conversations[session_id]) > 20:
-                # Mantener el prompt del sistema y los últimos 9 mensajes
-                self.conversations[session_id] = [
-                    self.conversations[session_id][0]  # System prompt
-                ] + self.conversations[session_id][-9:]
-            
-            return assistant_message
+            return None
             
         except Exception as e:
             print(f"Error en chat: {e}")

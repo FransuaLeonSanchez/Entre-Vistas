@@ -109,38 +109,52 @@ export default function ReunionPage() {
     
     ws.onmessage = async (event) => {
       const data = JSON.parse(event.data)
+      console.log('WebSocket message received:', data.type, data)
       
       switch (data.type) {
         case 'chat_response':
           // Mostrar que está hablando
+          console.log('Chat response received:', data.data)
           setIsSpeaking(true)
           setIsProcessing(false)
           break
           
         case 'tts_result':
           // Reproducir audio cuando esté listo
+          console.log('TTS result received, has audio:', !!data.data)
           if (data.data) {
             playAudio(data.data)
           }
+          // Resetear isProcessing después de recibir el audio
+          setIsProcessing(false)
           break
           
         case 'stt_result':
           // Transcripción recibida
-          console.log('Transcripción:', data.data)
+          console.log('STT result - Transcripción:', data.data)
           break
           
         case 'chat_start':
         case 'tts_start':
         case 'stt_start':
           // Indicadores de progreso
+          console.log('Processing started:', data.type)
           setIsProcessing(true)
+          // Timeout de seguridad para evitar bloqueos
+          setTimeout(() => {
+            setIsProcessing(false)
+          }, 10000) // 10 segundos máximo
           break
           
         case 'error':
           console.error('Error del servidor:', data.data)
           setIsProcessing(false)
           setIsSpeaking(false)
+          alert('Error: ' + data.data)
           break
+          
+        default:
+          console.log('Unknown message type:', data.type)
       }
     }
     
@@ -160,39 +174,79 @@ export default function ReunionPage() {
 
   // Play audio from base64
   const playAudio = (base64Audio: string) => {
-    const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`)
-    audio.onended = () => {
+    try {
+      const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`)
+      audio.onended = () => {
+        console.log('Audio playback ended')
+        setIsSpeaking(false)
+        setIsProcessing(false) // Asegurar que se resetee
+      }
+      audio.onerror = (error) => {
+        console.error('Audio playback error:', error)
+        setIsSpeaking(false)
+        setIsProcessing(false)
+      }
+      audio.play().catch(error => {
+        console.error('Error playing audio:', error)
+        setIsSpeaking(false)
+        setIsProcessing(false)
+      })
+      audioRef.current = audio
+    } catch (error) {
+      console.error('Error creating audio:', error)
       setIsSpeaking(false)
+      setIsProcessing(false)
     }
-    audio.play()
-    audioRef.current = audio
   }
 
   // Start recording
   const startRecording = async () => {
     try {
+      // Pausar/silenciar cualquier audio que esté reproduciéndose
+      if (audioRef.current && !audioRef.current.paused) {
+        console.log('Pausing current audio playback')
+        audioRef.current.pause()
+        setIsSpeaking(false)
+      }
+      
+      console.log('Requesting microphone permission...')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      console.log('Microphone permission granted')
+      
+      // Try webm first, fallback to other formats
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : 'audio/mp4'
+      
+      console.log('Using mimeType:', mimeType)
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
       
       mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size)
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data)
         }
       }
       
       mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        console.log('Recording stopped, chunks:', audioChunksRef.current.length)
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType })
         audioChunksRef.current = []
+        
+        console.log('Audio blob size:', audioBlob.size)
         
         // Convert to base64 and send
         const reader = new FileReader()
         reader.onloadend = () => {
           const base64Audio = reader.result?.toString().split(',')[1]
           if (base64Audio && wsRef.current?.readyState === WebSocket.OPEN) {
+            console.log('Sending audio, base64 length:', base64Audio.length)
             wsRef.current.send(JSON.stringify({
               type: 'audio',
               data: base64Audio
             }))
+          } else {
+            console.error('Cannot send audio - WebSocket not open or no data')
           }
         }
         reader.readAsDataURL(audioBlob)
@@ -201,29 +255,48 @@ export default function ReunionPage() {
       mediaRecorder.start()
       mediaRecorderRef.current = mediaRecorder
       setIsRecording(true)
+      console.log('Recording started successfully')
     } catch (error) {
       console.error('Error al iniciar grabación:', error)
+      alert('Error al acceder al micrófono. Por favor, permite el acceso al micrófono.')
     }
   }
 
   // Stop recording
   const stopRecording = () => {
+    console.log('Stop recording called, isRecording:', isRecording)
     if (mediaRecorderRef.current && isRecording) {
+      console.log('Stopping MediaRecorder...')
       mediaRecorderRef.current.stop()
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
       setIsRecording(false)
+    } else {
+      console.log('Cannot stop - no recorder or not recording')
     }
   }
 
   // Handle push-to-talk
   const handleMicToggle = () => {
-    if (!isStarted || isProcessing) return
+    console.log('Mic toggle clicked, isStarted:', isStarted, 'isProcessing:', isProcessing, 'isRecording:', isRecording)
+    
+    if (!isStarted) {
+      console.log('Cannot toggle mic - not started')
+      return
+    }
+    
+    // Permitir interrumpir incluso si está procesando, pero no si ya está grabando y procesando
+    if (isProcessing && isRecording) {
+      console.log('Cannot stop recording while processing')
+      return
+    }
     
     if (isRecording) {
+      console.log('Stopping recording...')
       // Stop recording and send
       stopRecording()
       setIsMicOn(false)
     } else {
+      console.log('Starting recording...')
       // Start recording
       startRecording()
       setIsMicOn(true)
@@ -411,11 +484,11 @@ export default function ReunionPage() {
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleMicToggle}
-              disabled={isProcessing}
+              disabled={isProcessing && isRecording}
               className={`p-4 rounded-full transition-all duration-200 backdrop-blur-sm border-2 relative ${
                 isRecording 
                   ? 'bg-red-500/80 border-red-400 hover:bg-red-600/80' 
-                  : isProcessing
+                  : isProcessing && !isSpeaking
                   ? 'bg-gray-500/50 border-gray-400 cursor-not-allowed'
                   : 'bg-white/20 border-white/30 hover:bg-white/30'
               }`}
@@ -430,7 +503,14 @@ export default function ReunionPage() {
                   />
                 </>
               ) : (
-                <Mic className={`w-6 h-6 ${isProcessing ? 'text-gray-300' : 'text-white'}`} />
+                <>
+                  <Mic className={`w-6 h-6 ${isProcessing ? 'text-gray-300' : 'text-white'}`} />
+                  {isProcessing && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white/50"></div>
+                    </div>
+                  )}
+                </>
               )}
             </motion.button>
 
