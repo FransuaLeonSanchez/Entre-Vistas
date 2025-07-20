@@ -1,0 +1,24 @@
+{
+  "preguntas_entrevista": [
+    {
+      "id": 1,
+      "pregunta": "Cuéntame sobre tu experiencia con SQL y bases de datos. ¿Has trabajado con consultas complejas, optimización de queries o modelado de datos?",
+      "categoria": "tecnica_sql"
+    },
+    {
+      "id": 2,
+      "pregunta": "¿Qué experiencia tienes analizando datos financieros o del sector bancario? Dame un ejemplo de un análisis de datos que hayas realizado y qué insights obtuviste.",
+      "categoria": "experiencia_bancaria"
+    },
+    {
+      "id": 3,
+      "pregunta": "¿Qué herramientas de visualización de datos dominas? ¿Cómo presentarías un análisis de morosidad crediticia a la gerencia del banco?",
+      "categoria": "visualizacion_comunicacion"
+    },
+    {
+      "id": 4,
+      "pregunta": "El BCP maneja millones de transacciones diarias. ¿Cómo abordarías el análisis de patrones de fraude en tarjetas de crédito usando Python o R?",
+      "categoria": "analitica_avanzada"
+    }
+  ]
+} 

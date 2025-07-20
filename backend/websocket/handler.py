@@ -18,11 +18,21 @@ class WebSocketHandler:
         self.tts_service = TTSService()
         self.active_sessions: Dict[str, WebSocket] = {}
     
-    async def connect(self, websocket: WebSocket) -> str:
+    async def connect(self, websocket: WebSocket, session_id: str = None) -> str:
         await websocket.accept()
-        session_id = str(uuid.uuid4())
+        
+        # Usar session_id proporcionado o generar uno nuevo
+        if not session_id:
+            session_id = str(uuid.uuid4())
+        
+        # Si es una sesión nueva con el mismo ID, limpiar la conversación anterior
+        if session_id in self.active_sessions:
+            # Limpiar conversación anterior
+            self.chat_service.clear_conversation(session_id)
+            print(f"Reiniciando sesión existente: {session_id}")
+        
         self.active_sessions[session_id] = websocket
-        print("connection open")
+        print(f"Conexión establecida: {session_id}")
         
         # María se presenta automáticamente al conectarse
         await self._send_initial_presentation(websocket, session_id)
@@ -32,21 +42,24 @@ class WebSocketHandler:
     async def _send_initial_presentation(self, websocket: WebSocket, session_id: str):
         """Envía la presentación inicial de María automáticamente"""
         try:
-            # Obtener la presentación inicial (mensaje vacío para activar la presentación)
-            initial_message = await self.chat_service.get_response("", session_id)
+            # Mensaje inicial hardcodeado - NO llamar a OpenAI
+            initial_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
             
-            if initial_message:
-                # Enviar el mensaje de chat inmediatamente
-                await websocket.send_text(json.dumps({
-                    "type": "chat_response",
-                    "data": initial_message,
-                    "timestamp": time.time()
-                }))
-                
-                # Generar y enviar el audio en paralelo
-                asyncio.create_task(self._process_and_send_tts(
-                    websocket, initial_message, session_id
-                ))
+            # Inicializar la conversación en el chat service
+            # Esto creará la sesión y marcará el mensaje inicial como enviado
+            await self.chat_service.get_response("", session_id)
+            
+            # Enviar el mensaje de chat inmediatamente
+            await websocket.send_text(json.dumps({
+                "type": "chat_response",
+                "data": initial_message,
+                "timestamp": time.time()
+            }))
+            
+            # Generar y enviar el audio en paralelo
+            asyncio.create_task(self._process_and_send_tts(
+                websocket, initial_message, session_id
+            ))
                 
         except Exception as e:
             print(f"Error en presentación inicial: {e}")
