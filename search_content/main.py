@@ -839,7 +839,7 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
     """Endpoint principal con búsquedas opcionales (empresa, mercado, reclutador) usando máxima calidad"""
     
     print(f"📝 Texto recibido: {propuesta_opciones.texto[:100]}...")
-    print(f"🔍 Opciones de búsqueda:")
+    print("🔍 Opciones de búsqueda:")
     print(f"   • Buscar empresa: {propuesta_opciones.buscar_empresa}")
     print(f"   • Buscar mercado: {propuesta_opciones.buscar_puesto_mercado}")
     print(f"   • Buscar entrevistador: {propuesta_opciones.buscar_entrevistador}")
@@ -850,7 +850,7 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
         # 1. Extraer información estructurada del texto con OpenAI
         propuesta = extraer_informacion_propuesta(propuesta_opciones.texto)
         
-        print(f"\n📋 PROPUESTA LABORAL EXTRAÍDA:")
+        print("\n📋 PROPUESTA LABORAL EXTRAÍDA:")
         print(f"{'='*80}")
         print(f"🏢 Empresa: {propuesta.empresa}")
         print(f"💼 Puesto: {propuesta.puesto}")
@@ -882,7 +882,7 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
             query_entrevistador = crear_prompt_entrevistador_personal(propuesta_opciones.nombre_entrevistador, propuesta.empresa)
             busquedas_pendientes.append((query_entrevistador, f"ENTREVISTADOR ({propuesta_opciones.nombre_entrevistador})"))
         elif propuesta_opciones.buscar_entrevistador and not propuesta_opciones.nombre_entrevistador:
-            print(f"\n⚠️  BÚSQUEDA ENTREVISTADOR ACTIVADA PERO SIN NOMBRE - OMITIDA")
+            print("\n⚠️  BÚSQUEDA ENTREVISTADOR ACTIVADA PERO SIN NOMBRE - OMITIDA")
         
         # Ejecutar búsquedas en paralelo
         resultados = []
@@ -927,7 +927,7 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
         tiempo_total = max([b["tiempo"] for b in busquedas_realizadas]) if busquedas_realizadas else 0.0
         
         # 3. Resumen de búsquedas realizadas
-        print(f"\n📊 RESUMEN DE BÚSQUEDAS PARALELAS (MÁXIMA CALIDAD):")
+        print("\n📊 RESUMEN DE BÚSQUEDAS PARALELAS (MÁXIMA CALIDAD):")
         print(f"{'='*80}")
         tiempo_individual_total = 0.0
         for busqueda in busquedas_realizadas:
@@ -1009,12 +1009,12 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
         print(f"\n{'='*80}")
         print("🎉 PROCESO COMPLETADO EXITOSAMENTE CON BÚSQUEDAS PARALELAS")
         print(f"{'='*80}")
-        print(f"📊 Resultados finales:")
+        print("📊 Resultados finales:")
         print(f"   • {len(preguntas)} preguntas contextualizadas con información combinada")
         print(f"   • {len(consejos_conexion)} consejos de conexión personal generados")
         print(f"   • {total_fuentes} fuentes de alta calidad consultadas en {len(busquedas_realizadas)} búsquedas PARALELAS")
         print(f"   • Tiempo total: {tiempo_total:.2f} segundos (paralelización optimizada)")
-        print(f"   • Configuración: sonar-pro, 2500 tokens por búsqueda")
+        print("   • Configuración: sonar-pro, 2500 tokens por búsqueda")
         print(f"   • Calidad investigación: {'Alta' if total_fuentes >= 6 else 'Media' if total_fuentes >= 3 else 'Baja'}")
         print(f"{'='*80}")
         

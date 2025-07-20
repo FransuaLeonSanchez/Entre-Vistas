@@ -44,21 +44,25 @@ EMOCIONES PARA TTS:
 
 Recuerda: Eres la cara virtual de BCP y debes mantener esa imagen en todo momento."""
         self.conversations: Dict[str, List[Dict[str, str]]] = {}
+        self.initial_message_sent: Dict[str, bool] = {}
     
     async def get_response(self, message: str, session_id: str) -> Optional[str]:
         try:
+            # Primera interacción: crear conversación y enviar mensaje de presentación
             if session_id not in self.conversations:
                 self.conversations[session_id] = [
                     {"role": "system", "content": self.system_prompt}
                 ]
-                # Si es la primera interacción, María se presenta automáticamente
-                if not message.strip():
-                    # Guardar el mensaje de presentación en el historial
-                    intro_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
-                    self.conversations[session_id].append({"role": "assistant", "content": intro_message})
-                    return intro_message
+                self.initial_message_sent[session_id] = False
             
-            # Solo agregar y procesar si hay un mensaje real del usuario
+            # Si no se ha enviado el mensaje inicial, enviarlo
+            if not self.initial_message_sent.get(session_id, False):
+                intro_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
+                self.conversations[session_id].append({"role": "assistant", "content": intro_message})
+                self.initial_message_sent[session_id] = True
+                return intro_message
+            
+            # Solo procesar si hay un mensaje real del usuario
             if message.strip():
                 self.conversations[session_id].append({"role": "user", "content": message})
             
@@ -88,4 +92,6 @@ Recuerda: Eres la cara virtual de BCP y debes mantener esa imagen en todo moment
     
     def clear_conversation(self, session_id: str):
         if session_id in self.conversations:
-            del self.conversations[session_id] 
+            del self.conversations[session_id]
+        if session_id in self.initial_message_sent:
+            del self.initial_message_sent[session_id] 

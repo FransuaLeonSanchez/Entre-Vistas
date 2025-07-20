@@ -16,7 +16,8 @@ import {
   Volume2,
   Camera,
   Send,
-  Play
+  Play,
+  MessageSquare
 } from 'lucide-react'
 
 const fadeInUp = {
@@ -86,16 +87,30 @@ export default function ReunionPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   
+  // Transcription panel states
+  const [transcriptionOpen, setTranscriptionOpen] = useState(true)
+  const [transcriptionMessages, setTranscriptionMessages] = useState<Array<{
+    role: 'recruiter' | 'candidate'
+    message: string
+    timestamp: Date
+  }>>([])
+  
   const wsRef = useRef<WebSocket | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const transcriptionEndRef = useRef<HTMLDivElement | null>(null)
 
   // Auto-collapse sidebar on mount
   useEffect(() => {
     // Dispatch event to collapse sidebar
     window.dispatchEvent(new CustomEvent('collapseSidebar'))
   }, [])
+  
+  // Auto-scroll transcription when new messages arrive
+  useEffect(() => {
+    transcriptionEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [transcriptionMessages])
 
   // Connect to WebSocket
   const connectWebSocket = () => {
@@ -117,6 +132,12 @@ export default function ReunionPage() {
           console.log('Chat response received:', data.data)
           setIsSpeaking(true)
           setIsProcessing(false)
+          // Agregar mensaje de María a la transcripción
+          setTranscriptionMessages(prev => [...prev, {
+            role: 'recruiter',
+            message: data.data,
+            timestamp: new Date()
+          }])
           break
           
         case 'tts_result':
@@ -132,6 +153,14 @@ export default function ReunionPage() {
         case 'stt_result':
           // Transcripción recibida
           console.log('STT result - Transcripción:', data.data)
+          // Agregar mensaje del candidato a la transcripción
+          if (data.data) {
+            setTranscriptionMessages(prev => [...prev, {
+              role: 'candidate',
+              message: data.data,
+              timestamp: new Date()
+            }])
+          }
           break
           
         case 'chat_start':
@@ -559,6 +588,101 @@ export default function ReunionPage() {
         </motion.div>
       </div>
 
+      {/* Floating Transcription Panel - Left Side */}
+      <AnimatePresence>
+        {transcriptionOpen && (
+          <motion.div
+            initial={{ opacity: 0, x: -400 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -400 }}
+            className="absolute top-6 left-28 w-96 max-h-[80vh] bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl border border-white/20 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary-500" />
+                Transcripción en Vivo
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTranscriptionMessages([])}
+                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Limpiar
+                </button>
+                <button
+                  onClick={() => setTranscriptionOpen(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
+              {transcriptionMessages.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">
+                    La transcripción aparecerá aquí cuando comience la conversación
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Contador de mensajes */}
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>Mensajes: {transcriptionMessages.length}</span>
+                    <div className="flex-1 h-px bg-gray-200"></div>
+                  </div>
+                  
+                  {/* Mensajes */}
+                  {transcriptionMessages.map((msg, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`${
+                        msg.role === 'recruiter' 
+                          ? 'bg-blue-50 border border-blue-200' 
+                          : 'bg-gray-50 border border-gray-200'
+                      } rounded-lg p-4`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          msg.role === 'recruiter'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-400 text-white'
+                        }`}>
+                          {msg.role === 'recruiter' ? 'M' : 'C'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <span className="font-medium text-gray-800 text-sm">
+                              {msg.role === 'recruiter' ? 'María (BCP)' : 'Candidato'}
+                            </span>
+                            <span className="text-xs text-gray-500 flex-shrink-0">
+                              {new Date(msg.timestamp).toLocaleTimeString('es-ES', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 break-words">
+                            {msg.message}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  <div ref={transcriptionEndRef} />
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Questions Panel - Interactive */}
       <AnimatePresence>
         {questionsOpen && (
@@ -770,6 +894,20 @@ export default function ReunionPage() {
       </AnimatePresence>
 
       {/* Panel Toggle Buttons (when closed) */}
+      <AnimatePresence>
+        {!transcriptionOpen && (
+          <motion.button
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            onClick={() => setTranscriptionOpen(true)}
+            className="absolute top-6 left-28 p-3 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg hover:bg-white transition-colors"
+          >
+            <MessageSquare className="w-6 h-6 text-primary-500" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {!questionsOpen && (
           <motion.button
