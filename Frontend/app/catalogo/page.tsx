@@ -178,7 +178,6 @@ export default function CatalogoPage() {
   useEffect(() => {
     window.dispatchEvent(new Event('expandSidebar'))
   }, [])
-
   const filteredAgents = agents
     .filter(agent => {
       // Filtro de búsqueda por texto
@@ -232,12 +231,12 @@ export default function CatalogoPage() {
   }
 
   return (
-    <div className="min-h-screen flex justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="w-full max-w-7xl space-y-8 py-8"
+        className="max-w-7xl mx-auto space-y-8"
       >
         {/* Header */}
         <motion.div variants={fadeInUp} className="text-center space-y-4">
@@ -460,7 +459,7 @@ export default function CatalogoPage() {
             <div className="flex flex-wrap gap-2">
               {searchTerm && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full">
-                  🔍 "{searchTerm}"
+                  🔍 &quot;{searchTerm}&quot;
                   <button onClick={() => setSearchTerm("")}>
                     <X className="w-3 h-3" />
                   </button>

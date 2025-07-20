@@ -1,3 +1,0 @@
-openai
-groq
-python-dotenv 

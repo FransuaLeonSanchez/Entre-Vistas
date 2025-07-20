@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entre-Vistas - Generador de Entrevistas v4.0</title>
+    <title>Entre-Vistas - Generador de Entrevistas</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,24 +22,8 @@
             color: #333;
             text-align: center;
         }
-        .version-badge {
-            background: #007bff;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 10px;
-        }
         .form-group {
             margin-bottom: 20px;
-        }
-        .form-row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-        .form-col {
-            flex: 1;
         }
         label {
             display: block;
@@ -47,44 +31,16 @@
             font-weight: bold;
             color: #555;
         }
-        input, textarea, select {
+        input, textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
             font-size: 16px;
-            box-sizing: border-box;
         }
         textarea {
             min-height: 100px;
             resize: vertical;
-        }
-        .checkbox-group {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            border: 1px solid #dee2e6;
-        }
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .checkbox-item input[type="checkbox"] {
-            width: auto;
-            margin-right: 10px;
-            transform: scale(1.2);
-        }
-        .checkbox-item label {
-            margin: 0;
-            font-weight: normal;
-            cursor: pointer;
-        }
-        .checkbox-description {
-            font-size: 12px;
-            color: #666;
-            margin-left: 25px;
-            margin-top: -5px;
         }
         button {
             background-color: #007bff;
@@ -95,7 +51,6 @@
             font-size: 16px;
             cursor: pointer;
             width: 100%;
-            margin-bottom: 10px;
         }
         button:hover {
             background-color: #0056b3;
@@ -103,26 +58,6 @@
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
-        }
-        .btn-secondary {
-            background-color: #6c757d;
-        }
-        .btn-secondary:hover {
-            background-color: #545b62;
-        }
-        .btn-success {
-            background-color: #28a745;
-        }
-        .btn-success:hover {
-            background-color: #1e7e34;
-        }
-        .btn-row {
-            display: flex;
-            gap: 10px;
-        }
-        .btn-row button {
-            width: auto;
-            flex: 1;
         }
         .resultado {
             margin-top: 30px;
@@ -176,14 +111,6 @@
             margin-top: 10px;
             display: none;
         }
-        .success {
-            color: #155724;
-            padding: 10px;
-            background-color: #d4edda;
-            border-radius: 5px;
-            margin-top: 10px;
-            display: none;
-        }
         .debug {
             background-color: #f0f0f0;
             padding: 10px;
@@ -192,86 +119,23 @@
             font-family: monospace;
             font-size: 12px;
             white-space: pre-wrap;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .endpoint-selector {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            font-size: 11px;
-            font-weight: bold;
-            border-radius: 10px;
-            margin-left: 5px;
-        }
-        .badge-new {
-            background: #28a745;
-            color: white;
-        }
-        .badge-original {
-            background: #6c757d;
-            color: white;
-        }
-        .hidden {
-            display: none;
-        }
-        .busquedas-status {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-size: 12px;
-        }
-        .fuente-item {
-            background: #e3f2fd;
-            padding: 8px;
-            margin: 5px 0;
-            border-radius: 3px;
-            font-size: 12px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎯 Entre-Vistas - Generador de Entrevistas con IA <span class="version-badge">v4.0</span></h1>
-        
-        <div class="endpoint-selector">
-            <h3>🚀 Selecciona el Tipo de Análisis:</h3>
-            <div class="form-row">
-                <div class="form-col">
-                    <label>
-                        <input type="radio" name="endpoint" value="opciones" checked> 
-                        <strong>Búsquedas Opcionales</strong> <span class="badge badge-new">NUEVO</span>
-                    </label>
-                    <small>Control granular de búsquedas: empresa, mercado, entrevistador</small>
-                </div>
-                <div class="form-col">
-                    <label>
-                        <input type="radio" name="endpoint" value="integral"> 
-                        <strong>Búsqueda Integral</strong> <span class="badge badge-original">ORIGINAL</span>
-                    </label>
-                    <small>Búsqueda completa unificada (empresa + cultura + puesto)</small>
-                </div>
-            </div>
-        </div>
+        <h1>🎯 Entre-Vistas - Generador de Entrevistas con IA</h1>
         
         <div style="text-align: right; margin-bottom: 20px;">
-            <div class="btn-row">
-                <button onclick="testConexion()" class="btn-success">🔧 Test Conexión</button>
-                <button onclick="testBusquedas()" class="btn-success">🧪 Test Búsquedas</button>
-            </div>
+            <button onclick="testConexion()" style="width: auto; padding: 8px 16px; font-size: 14px; background-color: #28a745;">
+                🔧 Test Conexión API
+            </button>
         </div>
         
         <form id="formulario">
             <div class="form-group">
                 <label for="texto">Pega aquí la propuesta laboral completa:</label>
-                <textarea id="texto" name="texto" required placeholder="Ejemplo: Buscamos un Backend Developer para Google Perú. El candidato trabajará en el equipo de Cloud Platform desarrollando APIs en Python. Requisitos: 3+ años de experiencia en Python, conocimientos de FastAPI, SQL y arquitecturas cloud..." rows="8"></textarea>
+                <textarea id="texto" name="texto" required placeholder="Ejemplo: Buscamos un Backend Developer para Google. El candidato trabajará en el equipo de Cloud Platform desarrollando APIs en Python. Requisitos: 3+ años de experiencia en Python, conocimientos de FastAPI, SQL y arquitecturas cloud..." rows="8"></textarea>
             </div>
             
             <!-- Opciones de búsqueda (solo visible con endpoint de opciones) -->
@@ -297,10 +161,10 @@
                     
                     <div class="checkbox-item">
                         <input type="checkbox" id="buscarEntrevistador">
-                        <label for="buscarEntrevistador">Información Personal del Entrevistador</label>
+                        <label for="buscarEntrevistador">Información General del Entrevistador</label>
                     </div>
                     <div class="checkbox-description">
-                        Intereses personales, hobbies, valores, personalidad y trasfondo para establecer conexión humana
+                        Búsqueda general en internet sobre la persona: información personal, profesional, redes sociales, cualquier dato disponible
                     </div>
                     
                     <div class="form-group" id="nombreEntrevistadorGroup" style="margin-top: 15px; display: none;">
@@ -315,11 +179,10 @@
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p id="loadingText">Analizando propuesta y realizando búsquedas web...</p>
+            <p>Analizando propuesta, realizando búsqueda integral y generando preguntas contextualizadas...</p>
         </div>
         
         <div class="error" id="error"></div>
-        <div class="success" id="success"></div>
         
         <div class="resultado" id="resultado">
             <h2>📋 Resultado de la Generación</h2>
@@ -329,14 +192,32 @@
                 <div id="propuestaExtraidaContent"></div>
             </div>
             
-            <div class="busquedas-status" id="busquedasStatus">
-                <h4>🔍 Estado de las Búsquedas Web</h4>
-                <div id="busquedasStatusContent"></div>
+            <div class="info-empresa" id="infoEmpresa">
+                <h3>🔍 Información Encontrada sobre la Empresa</h3>
+                <div id="infoEmpresaContent"></div>
             </div>
             
-            <div class="info-empresa" id="infoEmpresa">
-                <h3>🏢 Información Encontrada sobre la Empresa</h3>
-                <div id="infoEmpresaContent"></div>
+            <!-- Resultados de las 3 búsquedas por separado -->
+            <div class="section" id="resultadosBusquedas">
+                <h3>🔍 Resultados Detallados de las Búsquedas Web</h3>
+                
+                <div class="info-empresa" id="busquedaEmpresa" style="display: none;">
+                    <h4>🏢 Búsqueda: Información de la Empresa</h4>
+                    <div id="busquedaEmpresaContent"></div>
+                    <div class="busquedas-status" id="busquedaEmpresaStats"></div>
+                </div>
+                
+                <div class="info-empresa" id="busquedaMercado" style="display: none; background-color: #f0f8ff;">
+                    <h4>📈 Búsqueda: Mercado Laboral del Puesto</h4>
+                    <div id="busquedaMercadoContent"></div>
+                    <div class="busquedas-status" id="busquedaMercadoStats"></div>
+                </div>
+                
+                <div class="info-empresa" id="busquedaEntrevistador" style="display: none; background-color: #f8fff8;">
+                    <h4>👤 Búsqueda: Información del Entrevistador</h4>
+                    <div id="busquedaEntrevistadorContent"></div>
+                    <div class="busquedas-status" id="busquedaEntrevistadorStats"></div>
+                </div>
             </div>
             
             <div class="section">
@@ -365,74 +246,30 @@
         const formulario = document.getElementById('formulario');
         const btnGenerar = document.getElementById('btnGenerar');
         const loading = document.getElementById('loading');
-        const loadingText = document.getElementById('loadingText');
         const error = document.getElementById('error');
-        const success = document.getElementById('success');
         const resultado = document.getElementById('resultado');
         const debug = document.getElementById('debug');
-        const opcionesBusqueda = document.getElementById('opcionesBusqueda');
-        const nombreEntrevistadorGroup = document.getElementById('nombreEntrevistadorGroup');
-        
-        // Manejo de selección de endpoint
-        document.querySelectorAll('input[name="endpoint"]').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (e.target.value === 'opciones') {
-                    opcionesBusqueda.style.display = 'block';
-                } else {
-                    opcionesBusqueda.style.display = 'none';
-                }
-            });
-        });
-        
-        // Manejo de checkbox de entrevistador
-        document.getElementById('buscarEntrevistador').addEventListener('change', (e) => {
-            nombreEntrevistadorGroup.style.display = e.target.checked ? 'block' : 'none';
-        });
         
         formulario.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             // Limpiar resultados anteriores
             error.style.display = 'none';
-            success.style.display = 'none';
             resultado.style.display = 'none';
             loading.style.display = 'block';
             btnGenerar.disabled = true;
             
-            // Determinar endpoint y datos
-            const endpointType = document.querySelector('input[name="endpoint"]:checked').value;
-            let endpoint = 'http://localhost:8000/generar-entrevista';
-            let datos = {
+            // Obtener datos del formulario
+            const datos = {
                 texto: document.getElementById('texto').value
             };
             
-            if (endpointType === 'opciones') {
-                endpoint = 'http://localhost:8000/generar-entrevista-con-opciones';
-                datos = {
-                    texto: document.getElementById('texto').value,
-                    buscar_empresa: document.getElementById('buscarEmpresa').checked,
-                    buscar_puesto_mercado: document.getElementById('buscarMercado').checked,
-                    buscar_entrevistador: document.getElementById('buscarEntrevistador').checked,
-                    nombre_entrevistador: document.getElementById('nombreEntrevistador').value || null
-                };
-                
-                // Actualizar texto de loading
-                const busquedasActivas = [];
-                if (datos.buscar_empresa) busquedasActivas.push('empresa');
-                if (datos.buscar_puesto_mercado) busquedasActivas.push('mercado');
-                if (datos.buscar_entrevistador && datos.nombre_entrevistador) busquedasActivas.push('entrevistador');
-                
-                loadingText.innerHTML = `Ejecutando ${busquedasActivas.length} búsquedas EN PARALELO con máxima calidad:<br>• ${busquedasActivas.join('<br>• ')}<br><br>⚡ Paralelización optimizada para máximo rendimiento`;
-            } else {
-                loadingText.innerHTML = 'Realizando búsqueda integral completa...';
-            }
-            
             // Mostrar datos enviados en debug
-            debug.innerHTML = `ENDPOINT: ${endpoint}\n\nDATOS ENVIADOS:\n${JSON.stringify(datos, null, 2)}\n\n`;
+            debug.innerHTML = `DATOS ENVIADOS:\n${JSON.stringify(datos, null, 2)}\n\n`;
             
             try {
                 // Hacer petición a la API
-                const response = await fetch(endpoint, {
+                const response = await fetch('http://localhost:8000/generar-entrevista', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -450,14 +287,7 @@
                 }
                 
                 // Mostrar resultados
-                mostrarResultados(data, endpointType);
-                
-                const tipoAnalisis = endpointType === 'opciones' ? 
-                    (busquedasActivas.length > 1 ? 'búsquedas paralelas' : 'búsqueda específica') : 
-                    'búsqueda integral';
-                
-                success.innerHTML = `✅ Análisis completado exitosamente con ${data.preguntas.length} preguntas contextualizadas usando ${tipoAnalisis}`;
-                success.style.display = 'block';
+                mostrarResultados(data);
                 
             } catch (err) {
                 console.error('Error completo:', err);
@@ -473,7 +303,7 @@
             }
         });
         
-        function mostrarResultados(data, endpointType) {
+        function mostrarResultados(data) {
             // Mostrar información extraída de la propuesta
             const propuestaExtraidaContent = document.getElementById('propuestaExtraidaContent');
             propuestaExtraidaContent.innerHTML = `
@@ -507,13 +337,67 @@
                 busquedasStatus.style.display = 'none';
             }
             
-            // Mostrar información de la empresa
+            // Mostrar información de la empresa (resumen)
             const infoEmpresaContent = document.getElementById('infoEmpresaContent');
             infoEmpresaContent.innerHTML = `
                 <strong>${data.informacion_empresa.nombre}</strong><br>
                 ${data.informacion_empresa.informacion_encontrada || 'No se encontró información adicional'}<br>
                 <small><strong>Fuentes consultadas:</strong> ${data.informacion_empresa.fuentes_consultadas || 0}</small>
             `;
+            
+            // Mostrar resultados detallados de las 3 búsquedas por separado
+            if (endpointType === 'opciones' && data.investigacion_detallada.resultados_busquedas) {
+                const resultados = data.investigacion_detallada.resultados_busquedas;
+                
+                // Mostrar/ocultar secciones según las búsquedas activadas
+                // 1. Búsqueda de Empresa
+                const busquedaEmpresa = document.getElementById('busquedaEmpresa');
+                if (resultados.empresa.activada && resultados.empresa.contenido) {
+                    const busquedaEmpresaContent = document.getElementById('busquedaEmpresaContent');
+                    const busquedaEmpresaStats = document.getElementById('busquedaEmpresaStats');
+                    
+                    busquedaEmpresaContent.innerHTML = resultados.empresa.contenido || 'No se encontró información específica';
+                    busquedaEmpresaStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.empresa.fuentes} fuentes | 
+                        ${resultados.empresa.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaEmpresa.style.display = 'block';
+                } else {
+                    busquedaEmpresa.style.display = 'none';
+                }
+                
+                // 2. Búsqueda de Mercado
+                const busquedaMercado = document.getElementById('busquedaMercado');
+                if (resultados.mercado.activada && resultados.mercado.contenido) {
+                    const busquedaMercadoContent = document.getElementById('busquedaMercadoContent');
+                    const busquedaMercadoStats = document.getElementById('busquedaMercadoStats');
+                    
+                    busquedaMercadoContent.innerHTML = resultados.mercado.contenido || 'No se encontró información específica';
+                    busquedaMercadoStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.mercado.fuentes} fuentes | 
+                        ${resultados.mercado.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaMercado.style.display = 'block';
+                } else {
+                    busquedaMercado.style.display = 'none';
+                }
+                
+                // 3. Búsqueda de Entrevistador
+                const busquedaEntrevistador = document.getElementById('busquedaEntrevistador');
+                if (resultados.entrevistador.activada && resultados.entrevistador.contenido) {
+                    const busquedaEntrevistadorContent = document.getElementById('busquedaEntrevistadorContent');
+                    const busquedaEntrevistadorStats = document.getElementById('busquedaEntrevistadorStats');
+                    
+                    busquedaEntrevistadorContent.innerHTML = resultados.entrevistador.contenido || 'No se encontró información específica';
+                    busquedaEntrevistadorStats.innerHTML = `
+                        <strong>📊 Estadísticas:</strong> ${resultados.entrevistador.fuentes} fuentes | 
+                        ${resultados.entrevistador.tiempo.toFixed(2)}s | Estado: ✅ Completada
+                    `;
+                    busquedaEntrevistador.style.display = 'block';
+                } else {
+                    busquedaEntrevistador.style.display = 'none';
+                }
+            }
             
             // Mostrar preguntas
             const preguntasDiv = document.getElementById('preguntas');
@@ -526,43 +410,7 @@
                 `;
             });
             
-            // Mostrar consejos de conexión personal (si están disponibles)
-            const consejosSeccion = document.getElementById('consejosSeccion');
-            const consejosDiv = document.getElementById('consejos');
-            
-            if (data.consejos_conexion && data.consejos_conexion.length > 0) {
-                consejosDiv.innerHTML = '';
-                data.consejos_conexion.forEach((consejo, index) => {
-                    consejosDiv.innerHTML += `
-                        <div class="list-item" style="border-left-color: #28a745;">
-                            <strong>💡 ${index + 1}.</strong> ${consejo}
-                        </div>
-                    `;
-                });
-                consejosSeccion.style.display = 'block';
-            } else {
-                consejosSeccion.style.display = 'none';
-            }
-            
-            // Mostrar detalles de investigación
-            const investigacionDetails = document.getElementById('investigacionDetails');
-            const detalles = data.investigacion_detallada;
-            investigacionDetails.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div class="fuente-item">
-                        <strong>Búsquedas Web:</strong> ${detalles.busqueda_web_realizada ? '✅ Sí' : '❌ No'}
-                    </div>
-                    <div class="fuente-item">
-                        <strong>Calidad:</strong> ${detalles.calidad_investigacion || 'N/A'}
-                    </div>
-                    <div class="fuente-item">
-                        <strong>Tiempo Total:</strong> ${detalles.tiempo_total?.toFixed(2) || 'N/A'} segundos
-                    </div>
-                    <div class="fuente-item">
-                        <strong>Tipo:</strong> ${detalles.tipo_busqueda || (endpointType === 'opciones' ? 'Búsquedas Opcionales' : 'Búsqueda Integral')}
-                    </div>
-                </div>
-            `;
+            // Las actividades han sido eliminadas del sistema
             
             // Mostrar resultado
             resultado.style.display = 'block';
@@ -570,42 +418,24 @@
         
         async function testConexion() {
             try {
+                // Test endpoint simple
                 const response = await fetch('http://localhost:8000/');
                 const data = await response.json();
-                alert(`✅ Conexión exitosa: ${data.mensaje}\nVersión: ${data.version}\nFuncionalidades: ${data.funcionalidades.length}`);
-            } catch (err) {
-                alert(`❌ Error de conexión: ${err.message}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8000`);
-            }
-        }
-        
-        async function testBusquedas() {
-            try {
-                const testData = {
-                    empresa: "Google Perú",
-                    puesto: "Software Engineer",
-                    buscar_empresa: true,
-                    buscar_puesto_mercado: true,
-                    buscar_entrevistador: false,
-                    nombre_entrevistador: null
-                };
+                alert(`✅ Conexión exitosa: ${data.mensaje}`);
                 
-                const response = await fetch('http://localhost:8000/test-busquedas-opcionales', {
+                // Test endpoint POST
+                const testResponse = await fetch('http://localhost:8000/test', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(testData)
+                    body: JSON.stringify({ texto: "Test de conexión" })
                 });
+                const testData = await testResponse.json();
+                console.log('Test POST:', testData);
                 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    alert(`✅ Test de búsquedas exitoso:\n• Búsquedas realizadas: ${data.estadisticas.busquedas_realizadas}\n• Total fuentes: ${data.estadisticas.total_fuentes}\n• Tiempo total: ${data.estadisticas.tiempo_total.toFixed(2)}s\n• Calidad: ${data.estadisticas.calidad_investigacion}`);
-                } else {
-                    alert(`❌ Error en test: ${data.error || 'Error desconocido'}`);
-                }
             } catch (err) {
-                alert(`❌ Error de conexión en test: ${err.message}`);
+                alert(`❌ Error de conexión: ${err.message}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8000`);
             }
         }
     </script>

@@ -1,11 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict
 from openai import OpenAI
 import requests
-import aiohttp
-import asyncio
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -32,13 +30,6 @@ SONAR_API_KEY = os.getenv("SONAR_API_KEY")
 class PropuestaLaboralTexto(BaseModel):
     texto: str
 
-class PropuestaLaboralConOpciones(BaseModel):
-    texto: str
-    buscar_empresa: bool = True
-    buscar_puesto_mercado: bool = False  
-    buscar_entrevistador: bool = False
-    nombre_entrevistador: Optional[str] = None
-
 class PropuestaLaboral(BaseModel):
     empresa: str
     puesto: str
@@ -54,7 +45,6 @@ class SonarResponse(BaseModel):
 
 class RespuestaEntrevista(BaseModel):
     preguntas: List[str]
-    consejos_conexion: List[str] = []
     informacion_empresa: Dict
     propuesta_extraida: Dict
     investigacion_detallada: Dict
@@ -156,7 +146,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
         print(f"🔍 Iniciando búsqueda con {modelo} (MÁXIMA CALIDAD)")
         print(f"📝 Prompt enviado: {query[:150]}...")
         print(f"⚡ Configuración: {max_tokens} tokens, temp={temperature}")
-        print(f"⏱️  Esperando respuesta...")
+        print("⏱️  Esperando respuesta...")
         
         response = requests.post(url, json=payload, headers=headers, timeout=45)
         tiempo_respuesta = (datetime.now() - start_time).total_seconds()
@@ -179,7 +169,7 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
             content = data["choices"][0]["message"]["content"]
             
             # Mostrar el contenido de la respuesta en consola
-            print(f"📄 CONTENIDO DE LA BÚSQUEDA:")
+            print("📄 CONTENIDO DE LA BÚSQUEDA:")
             print(f"{'='*80}")
             print(content[:500] + "..." if len(content) > 500 else content)
             print(f"{'='*80}")
@@ -293,189 +283,6 @@ def buscar_con_sonar(query: str, search_type: str = "pro") -> SonarResponse:
             modelo_usado="error"
         )
 
-# Función asíncrona para búsquedas paralelas con Sonar
-async def buscar_con_sonar_async(query: str, search_type: str = "pro") -> SonarResponse:
-    """Versión asíncrona de buscar_con_sonar para paralelización"""
-    
-    start_time = datetime.now()
-    url = "https://api.perplexity.ai/chat/completions"
-    
-    headers = {
-        "Authorization": f"Bearer {SONAR_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    # Configuración SIEMPRE de máxima calidad
-    modelo = "sonar-pro"
-    max_tokens = 2500
-    temperature = 0.1
-    
-    payload = {
-        "model": modelo,
-        "messages": [
-            {
-                "role": "system",
-                "content": "Eres un investigador experto de élite que proporciona información actualizada, precisa y extremadamente detallada basada en fuentes web confiables de alta calidad. Prioriza fuentes oficiales, verificables y recientes. Incluye detalles específicos, datos concretos y contexto relevante en cada respuesta."
-            },
-            {
-                "role": "user", 
-                "content": query
-            }
-        ],
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "search_recency_filter": "month",
-        "return_related_questions": True,
-        "search_depth_filter": "advanced",
-        "enable_clarification_questions": True
-    }
-    
-    try:
-        if not SONAR_API_KEY:
-            print("❌ SONAR_API_KEY no configurada")
-            return SonarResponse(
-                contenido="Información no disponible - API key no configurada",
-                fuentes=[],
-                busquedas_realizadas=False,
-                tiempo_respuesta=0.0,
-                modelo_usado="none"
-            )
-            
-        print(f"🔍 Iniciando búsqueda con {modelo} (MÁXIMA CALIDAD - ASYNC)")
-        print(f"📝 Prompt enviado: {query[:150]}...")
-        
-        timeout = aiohttp.ClientTimeout(total=45)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload, headers=headers) as response:
-                tiempo_respuesta = (datetime.now() - start_time).total_seconds()
-                
-                if response.status == 200:
-                    data = await response.json()
-                    print(f"🔍 Debug - Claves en respuesta: {list(data.keys())}")
-                    
-                    # Validar estructura de respuesta
-                    if "choices" not in data or not data["choices"]:
-                        print("❌ Error: Respuesta sin campo 'choices'")
-                        return SonarResponse(
-                            contenido="Error en estructura de respuesta",
-                            fuentes=[],
-                            busquedas_realizadas=False,
-                            tiempo_respuesta=tiempo_respuesta,
-                            modelo_usado=modelo
-                        )
-                    
-                    content = data["choices"][0]["message"]["content"]
-                    
-                    # Extraer fuentes/citas de la respuesta
-                    fuentes = []
-                    
-                    # Extraer fuentes de search_results (limitado a 3 fuentes)
-                    if "search_results" in data and data["search_results"]:
-                        for i, result in enumerate(data["search_results"][:3]):
-                            if isinstance(result, dict):
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": result.get("title", result.get("name", "Título no disponible"))[:80] + "..." if len(result.get("title", result.get("name", ""))) > 80 else result.get("title", result.get("name", "Título no disponible")),
-                                    "url": result.get("url", "URL no disponible"),
-                                    "fecha": result.get("date", result.get("published_date", "Fecha no disponible"))
-                                })
-                            else:
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": str(result)[:80] + "..." if len(str(result)) > 80 else str(result),
-                                    "url": "URL no disponible",
-                                    "fecha": "Fecha no disponible"
-                                })
-                    
-                    # Si no hay search_results, intentar con citations (limitado a 3)
-                    elif "citations" in data and data["citations"]:
-                        for i, citation in enumerate(data["citations"][:3]):
-                            if isinstance(citation, dict):
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": citation.get("title", "Título no disponible")[:80] + "..." if len(citation.get("title", "")) > 80 else citation.get("title", "Título no disponible"),
-                                    "url": citation.get("url", "URL no disponible"),
-                                    "fecha": citation.get("date", "Fecha no disponible")
-                                })
-                            else:
-                                url_citation = str(citation)
-                                fuentes.append({
-                                    "numero": i + 1,
-                                    "titulo": f"Fuente {i + 1}",
-                                    "url": url_citation,
-                                    "fecha": "Fecha no disponible"
-                                })
-                    
-                    # Verificar si se realizaron búsquedas web
-                    busquedas_realizadas = len(fuentes) > 0 or "based on" in content.lower() or "according to" in content.lower()
-                    
-                    print(f"✅ Búsqueda async completada en {tiempo_respuesta:.2f}s con {len(fuentes)} fuentes")
-                    
-                    return SonarResponse(
-                        contenido=content,
-                        fuentes=fuentes,
-                        busquedas_realizadas=busquedas_realizadas,
-                        tiempo_respuesta=tiempo_respuesta,
-                        modelo_usado=modelo
-                    )
-                else:
-                    response_text = await response.text()
-                    print(f"❌ Error en Sonar - Status: {response.status}, Response: {response_text}")
-                    return SonarResponse(
-                        contenido="Información no disponible en este momento",
-                        fuentes=[],
-                        busquedas_realizadas=False,
-                        tiempo_respuesta=tiempo_respuesta,
-                        modelo_usado=modelo
-                    )
-                    
-    except asyncio.TimeoutError:
-        print("⏰ Timeout en Sonar API (async)")
-        return SonarResponse(
-            contenido="Información no disponible - timeout",
-            fuentes=[],
-            busquedas_realizadas=False,
-            tiempo_respuesta=45.0,
-            modelo_usado=modelo
-        )
-    except Exception as e:
-        print(f"❌ Error en Sonar async: {e}")
-        return SonarResponse(
-            contenido="Información no disponible",
-            fuentes=[],
-            busquedas_realizadas=False,
-            tiempo_respuesta=0.0,
-            modelo_usado="error"
-        )
-
-# Función para ejecutar búsquedas en paralelo
-async def ejecutar_busquedas_paralelas(busquedas: List[tuple]) -> List[SonarResponse]:
-    """
-    Ejecuta múltiples búsquedas de Sonar en paralelo
-    busquedas: Lista de tuplas (query, nombre_busqueda)
-    """
-    print(f"\n⚡ EJECUTANDO {len(busquedas)} BÚSQUEDAS EN PARALELO")
-    print(f"{'='*80}")
-    
-    start_time = datetime.now()
-    
-    # Crear las tareas asíncronas
-    tasks = []
-    for query, nombre in busquedas:
-        print(f"🚀 Preparando búsqueda: {nombre}")
-        task = buscar_con_sonar_async(query)
-        tasks.append(task)
-    
-    # Ejecutar todas las búsquedas en paralelo
-    print(f"⚡ Iniciando {len(tasks)} búsquedas simultáneas...")
-    resultados = await asyncio.gather(*tasks)
-    
-    tiempo_total = (datetime.now() - start_time).total_seconds()
-    print(f"✅ TODAS LAS BÚSQUEDAS COMPLETADAS EN {tiempo_total:.2f}s")
-    print(f"{'='*80}")
-    
-    return resultados
-
 # Prompt integral para investigación completa de empresa y puesto
 def crear_prompt_integral(empresa: str, puesto: str) -> str:
     """Busca información completa sobre la empresa, cultura y puesto en una sola consulta"""
@@ -586,80 +393,24 @@ CONTEXTO SECTORIAL:
 
 Esta información ayudará a entender el contexto competitivo y las expectativas del mercado para {puesto} en Perú."""
 
-# Función específica para búsqueda de información del reclutador
-def crear_prompt_reclutador(nombre_reclutador: str, empresa: str) -> str:
-    """Busca información específica sobre el reclutador para contextualizar la entrevista"""
-    return f"""Busca información profesional sobre {nombre_reclutador} de {empresa} para contextualizar la entrevista:
-
-INFORMACIÓN PROFESIONAL DEL RECLUTADOR:
-- Perfil profesional de {nombre_reclutador} en {empresa}
-- Posición actual y rol dentro de {empresa}
-- Experiencia profesional y trayectoria en recursos humanos o reclutamiento
-- Especialización en tipos de puestos o sectores específicos
-- Tiempo trabajando en {empresa} y roles anteriores
-
-ESTILO Y ENFOQUE DE RECLUTAMIENTO:
-- Metodología o estilo de entrevistas de {nombre_reclutador}
-- Competencias o habilidades que típicamente evalúa
-- Enfoque en entrevistas técnicas vs. competencias blandas
-- Testimonios o feedback de candidatos previos
-
-CONTEXTO EN {empresa}:
-- Área o departamento donde trabaja {nombre_reclutador}
-- Tipos de posiciones que típicamente maneja en {empresa}
-- Proceso de selección característico que utiliza
-- Criterios de evaluación que suele priorizar
-
-PRESENCIA PROFESIONAL:
-- Perfil en LinkedIn de {nombre_reclutador}
-- Artículos, publicaciones o contenido profesional
-- Participación en eventos o conferencias de RRHH
-- Reconocimientos o logros profesionales
-
-Esta información ayudará a adaptar la preparación de la entrevista al estilo específico del reclutador."""
-
 # Función específica para búsqueda de información personal del entrevistador
 def crear_prompt_entrevistador_personal(nombre_entrevistador: str, empresa: str) -> str:
-    """Busca información personal y amplia sobre el entrevistador como persona para establecer conexión"""
-    return f"""Busca información PERSONAL y completa sobre {nombre_entrevistador} que trabaja en {empresa}, enfocándote en conocer a la PERSONA detrás del profesional:
+    """Busca información general sobre el entrevistador para establecer conexión"""
+    return f"""¿Qué sabes de {nombre_entrevistador}? Busca en internet toda la información posible sobre esta persona de cualquier tipo.
 
-INFORMACIÓN PERSONAL Y PROFESIONAL:
-- Perfil completo de {nombre_entrevistador} como persona y profesional
-- Trasfondo personal, educación y formación de {nombre_entrevistador}
-- Experiencia laboral, trayectoria profesional y especialización
-- Posición actual en {empresa} y responsabilidades
+Busca información general y completa sobre {nombre_entrevistador}:
 
-INTERESES PERSONALES Y PASIONES:
-- Hobbies, aficiones y actividades que disfruta {nombre_entrevistador}
-- Deportes que practica o equipos que sigue
-- Intereses en tecnología, arte, música, literatura, viajes
-- Actividades de tiempo libre y entretenimiento
+- Cualquier información personal, profesional o pública disponible
+- Perfil en redes sociales (LinkedIn, Twitter, Instagram, etc.)
+- Artículos, publicaciones, entrevistas o contenido que haya creado
+- Participación en eventos, conferencias o charlas
+- Educación, experiencia laboral y trayectoria
+- Intereses, hobbies o actividades personales
+- Proyectos, logros o reconocimientos
+- Personalidad, estilo de comunicación y valores
+- Cualquier otra información relevante que encuentres
 
-PRESENCIA EN REDES SOCIALES Y DIGITAL:
-- Perfil en LinkedIn con contenido personal y profesional
-- Presencia en Twitter, Instagram u otras redes sociales
-- Publicaciones, artículos o contenido que comparte
-- Opiniones, pensamientos o reflexiones que expresa públicamente
-
-VALORES Y PERSPECTIVAS PERSONALES:
-- Causas sociales o valores que defiende {nombre_entrevistador}
-- Filosofía de trabajo y enfoque personal hacia el liderazgo
-- Participación en comunidades, eventos o iniciativas
-- Reconocimientos personales o logros destacados
-
-ESTILO PERSONAL Y COMUNICACIÓN:
-- Forma de comunicarse y expresarse públicamente
-- Estilo de liderazgo o interacción con equipos
-- Anécdotas, experiencias o historias personales compartidas
-- Personalidad y características distintivas
-
-CONEXIONES Y NETWORKING:
-- Industrias o sectores donde tiene influencia
-- Mentores, colegas o figuras que admira
-- Participación en conferencias, eventos o charlas
-- Colaboraciones o proyectos personales
-
-Esta información ayudará a establecer una conexión más personal y humana durante la entrevista, conociendo los intereses, valores y personalidad de {nombre_entrevistador}."""
+Proporciona toda la información disponible sobre {nombre_entrevistador} para entender su personalidad y estilo como entrevistador."""
 
 # Función para generar preguntas con OpenAI
 def generar_preguntas(propuesta: PropuestaLaboral, informacion_integral: str) -> dict:
@@ -711,15 +462,22 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
     - INCORPORA datos concretos, nombres de productos, tecnologías, proyectos o metodologías encontradas
     - Las preguntas evalúan al candidato USANDO el contexto específico como marco de referencia
     
-    Responde en formato JSON con las siguientes claves:
-    - "preguntas": lista de strings con las preguntas específicas
+    Responde ÚNICAMENTE en formato JSON válido con esta estructura exacta:
+    {{
+        "preguntas": [
+            "texto de pregunta 1 como string",
+            "texto de pregunta 2 como string"
+        ]
+    }}
+    
+    IMPORTANTE: Las preguntas deben ser strings directos, NO objetos con llaves.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas de entrevista CONTEXTUALIZADAS y específicas. SIEMPRE incluyes información específica de la empresa investigada en cada pregunta. Las preguntas deben incorporar tecnologías, proyectos, cultura y contexto real de la empresa. Responde SIEMPRE en formato JSON válido."},
+                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas de entrevista CONTEXTUALIZADAS y específicas. SIEMPRE incluyes información específica de la empresa investigada en cada pregunta. Las preguntas deben incorporar tecnologías, proyectos, cultura y contexto real de la empresa. Responde SIEMPRE en formato JSON válido con arrays de strings, NUNCA objetos con llaves."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
@@ -729,8 +487,21 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
         import json
         resultado = json.loads(response.choices[0].message.content)
         
-        # Mostrar preguntas generadas
-        preguntas = resultado.get('preguntas', [])
+        # Procesar preguntas para asegurar formato correcto
+        preguntas_raw = resultado.get('preguntas', [])
+        preguntas = []
+        
+        for pregunta in preguntas_raw:
+            if isinstance(pregunta, dict):
+                # Si OpenAI devolvió un objeto, extraer el texto de la pregunta
+                texto_pregunta = pregunta.get('pregunta', str(pregunta))
+                preguntas.append(texto_pregunta)
+            elif isinstance(pregunta, str):
+                # Si ya es string, usarlo directamente
+                preguntas.append(pregunta)
+            else:
+                # Convertir a string como fallback
+                preguntas.append(str(pregunta))
         
         print(f"✅ Preguntas contextualizadas generadas: {len(preguntas)} preguntas potenciadas con información específica de {propuesta.empresa}")
         
@@ -742,7 +513,8 @@ INFORMACIÓN INTEGRAL INVESTIGADA SOBRE {propuesta.empresa}:
                 print()
             print(f"{'='*80}")
         
-        return resultado
+        # Devolver resultado con formato corregido
+        return {"preguntas": preguntas}
     except Exception as e:
         print(f"❌ Error en OpenAI: {e}")
         return {"preguntas": []}
@@ -788,42 +560,55 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
     {contexto_completo}
     
     INSTRUCCIONES ESPECÍFICAS:
-    Basándote en toda la información investigada, genera 10-12 preguntas de EVALUACIÓN CONTEXTUALIZADAS:
+    Genera 10-12 preguntas de EVALUACIÓN CONTEXTUALIZADAS basándote PRINCIPALMENTE en la información de la EMPRESA y el MERCADO LABORAL:
+    
+    FUENTES PRINCIPALES PARA LAS PREGUNTAS:
+    - Información específica de {propuesta.empresa}: tecnologías, cultura, proyectos, metodologías
+    - Análisis del mercado laboral para {propuesta.puesto}: tendencias, competencias demandadas, tecnologías populares
     
     TIPOS DE PREGUNTAS:
-    - 3-4 preguntas técnicas incorporando tecnologías específicas de {propuesta.empresa} y del mercado
-    - 3-4 preguntas situacionales basadas en la cultura de {propuesta.empresa} y personalidad del entrevistador
-    - 4-5 preguntas de competencias que combinen información de la empresa, mercado y conexión personal con el entrevistador
+    - 4-5 preguntas técnicas incorporando tecnologías específicas de {propuesta.empresa} y tecnologías demandadas en el mercado
+    - 3-4 preguntas situacionales basadas en la cultura y metodologías de {propuesta.empresa}
+    - 3-4 preguntas de competencias que combinen los retos específicos de {propuesta.empresa} con las competencias valoradas en el mercado
     
-    CÓMO POTENCIAR LAS PREGUNTAS:
-    - INCLUYE tecnologías y metodologías específicas de {propuesta.empresa}
-    - INCORPORA tendencias del mercado laboral para {propuesta.puesto} en Perú
-    - ADAPTA el enfoque para establecer conexión personal con el entrevistador (intereses, valores, personalidad)
-    - MENCIONA competencias valoradas en el mercado peruano
-    - REFERENCIA proyectos y retos específicos de {propuesta.empresa}
-    - CREA oportunidades para conversación natural sobre intereses comunes
+    CÓMO ESTRUCTURAR LAS PREGUNTAS:
+    - PRIORIZA información específica de {propuesta.empresa} (tecnologías, proyectos, cultura, metodologías)
+    - INCORPORA tendencias y competencias del mercado laboral para {propuesta.puesto} en Perú
+    - MENCIONA herramientas, frameworks y tecnologías específicas encontradas
+    - REFERENCIA proyectos actuales, retos reales y contexto específico de {propuesta.empresa}
     
-    ESTRATEGIA DE CONEXIÓN PERSONAL:
-    - Si hay información del entrevistador, sugiere formas sutiles de mencionar intereses compartidos
-    - Incluye preguntas que permitan mostrar conocimiento sobre la persona del entrevistador
-    - Adapta el estilo comunicativo según la personalidad identificada del entrevistador
+    USO DE LA INFORMACIÓN DEL ENTREVISTADOR:
+    La información del entrevistador es SOLO para contexto y consejos de conexión personal, NO para generar las preguntas principales.
+    - Si hay información del entrevistador, úsala para generar consejos de conexión
+    - Adapta el tono/estilo de las preguntas según la personalidad del entrevistador
+    - Sugiere temas de conversación casual basados en sus intereses
     
     REQUISITOS:
-    - Cada pregunta debe estar contextualizada con información específica
-    - Combina inteligentemente los diferentes tipos de información
-    - Evita preguntas genéricas
-    - Enfócate en evaluación práctica y específica con conexión humana
+    - Las preguntas deben evaluar competencias técnicas y profesionales específicas
+    - Basar TODAS las preguntas en información concreta de empresa + mercado
+    - Evita preguntas genéricas o que no tengan contexto específico
+    - Genera consejos separados para establecer conexión personal con el entrevistador
     
-    Responde en formato JSON con:
-    - "preguntas": lista de strings con las preguntas específicas
-    - "consejos_conexion": lista de consejos para establecer conexión personal (si hay info del entrevistador)
+    Responde ÚNICAMENTE en formato JSON válido con esta estructura exacta:
+    {{
+        "preguntas": [
+            "texto de pregunta 1 como string",
+            "texto de pregunta 2 como string"
+        ],
+        "consejos_conexion": [
+            "consejo 1 como string",
+            "consejo 2 como string"
+        ]
+    }}
+    
+    IMPORTANTE: Las preguntas deben ser strings directos, NO objetos con llaves.
     """
     
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas contextualizadas combinando información de empresa, mercado y entrevistador. Creas conexiones humanas auténticas. Responde SIEMPRE en formato JSON válido."},
+                {"role": "system", "content": "Eres un experto en RRHH que genera preguntas contextualizadas combinando información de empresa, mercado y entrevistador. Creas conexiones humanas auténticas. Responde SIEMPRE en formato JSON válido con arrays de strings, NUNCA objetos con llaves."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
@@ -833,13 +618,47 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
         import json
         resultado = json.loads(response.choices[0].message.content)
         
-        preguntas = resultado.get('preguntas', [])
-        consejos = resultado.get('consejos_conexion', [])
+        # Procesar preguntas para asegurar formato correcto
+        preguntas_raw = resultado.get('preguntas', [])
+        preguntas = []
+        
+        for pregunta in preguntas_raw:
+            if isinstance(pregunta, dict):
+                # Si OpenAI devolvió un objeto, extraer el texto de la pregunta
+                texto_pregunta = pregunta.get('pregunta', str(pregunta))
+                preguntas.append(texto_pregunta)
+            elif isinstance(pregunta, str):
+                # Si ya es string, usarlo directamente
+                preguntas.append(pregunta)
+            else:
+                # Convertir a string como fallback
+                preguntas.append(str(pregunta))
+        
+        # Procesar consejos de conexión
+        consejos_raw = resultado.get('consejos_conexion', [])
+        consejos = []
+        
+        for consejo in consejos_raw:
+            if isinstance(consejo, dict):
+                # Si es objeto, extraer el texto
+                texto_consejo = consejo.get('consejo', str(consejo))
+                consejos.append(texto_consejo)
+            elif isinstance(consejo, str):
+                # Si ya es string, usarlo directamente
+                consejos.append(consejo)
+            else:
+                # Convertir a string como fallback
+                consejos.append(str(consejo))
+        
         print(f"✅ Preguntas contextualizadas generadas: {len(preguntas)} preguntas con contexto múltiple")
         if consejos:
             print(f"✅ Consejos de conexión personal generados: {len(consejos)} consejos")
         
-        return resultado
+        # Devolver resultado con formato corregido
+        return {
+            "preguntas": preguntas,
+            "consejos_conexion": consejos
+        }
     except Exception as e:
         print(f"❌ Error en OpenAI: {e}")
         return {"preguntas": [], "consejos_conexion": []}
@@ -848,43 +667,35 @@ INFORMACIÓN PERSONAL DEL ENTREVISTADOR:
 async def root():
     return {
         "mensaje": "API de Entrevistas - Entre-Vistas", 
-        "version": "4.0", 
+        "version": "3.1", 
         "funcionalidades": [
-            "🚀 SISTEMA DE BÚSQUEDAS PARALELAS CON MÁXIMA CALIDAD",
-            "⚡ Búsquedas simultáneas para máximo rendimiento",
-            "3 tipos de búsquedas independientes activables por parámetros",
-            "Búsqueda de empresa: contexto, tecnologías, cultura en Perú",
-            "Búsqueda de mercado: puestos similares en otras empresas de Perú", 
-            "Búsqueda de entrevistador: información personal para conexión humana",
-            "sonar-pro con 2500 tokens para cada búsqueda activada",
-            "10-12 preguntas contextualizadas con información combinada",
-            "Consejos de conexión personal con el entrevistador"
+            "🚀 SIEMPRE MÁXIMA CALIDAD (sonar-pro)",
+            "1 Búsqueda integral ultra-completa",
+            "Máximo 3 fuentes de alta calidad",
+            "2500 tokens para máximo detalle en una sola consulta",
+            "Información empresarial + cultura + puesto en búsqueda unificada", 
+            "Contexto completo e integrado de empresa y rol",
+            "10-12 preguntas potenciadas con contexto integral específico",
+            "Referencias verificadas y de alta calidad",
+            "Eficiencia optimizada con una sola consulta API"
         ],
         "configuracion_maxima_calidad": {
             "modelo": "sonar-pro",
             "tokens": 2500,
             "temperature": 0.1,
             "profundidad": "advanced",
-            "fuentes_maximas_por_busqueda": 3
+            "fuentes_maximas": 3
         },
-        "busquedas_opcionales": {
-            "buscar_empresa": "Información específica de la empresa en Perú (true/false)",
-            "buscar_puesto_mercado": "Análisis del puesto en otras empresas de Perú (true/false)",
-            "buscar_entrevistador": "Información personal del entrevistador para conexión (true/false)",
-            "nombre_entrevistador": "Nombre del entrevistador (opcional, requerido si buscar_entrevistador=true)"
+        "busqueda_integral": {
+            "tipo": "Búsqueda completa unificada",
+            "incluye": "Empresa + Cultura + Puesto + Contexto específico",
+            "fuentes": "Máximo 3 fuentes de alta calidad",
+            "eficiencia": "Una sola consulta API optimizada"
         },
-        "endpoints": {
-            "/generar-entrevista": "Endpoint original (búsqueda integral)",
-            "/generar-entrevista-con-opciones": "Nuevo endpoint con búsquedas opcionales",
-            "/test-sonar": "Endpoint de prueba para búsqueda integral",
-            "/test-busquedas-opcionales": "Endpoint de prueba para búsquedas opcionales"
-        },
-        "ejemplo_uso": {
-            "texto": "Propuesta laboral como texto",
-            "buscar_empresa": True,
-            "buscar_puesto_mercado": True, 
-            "buscar_entrevistador": False,
-            "nombre_entrevistador": None
+        "metricas_calidad": {
+            "Alta": "3 fuentes encontradas",
+            "Media": "2 fuentes encontradas", 
+            "Baja": "1 fuente encontrada"
         }
     }
 
@@ -924,89 +735,6 @@ async def test_sonar(data: dict):
     except Exception as e:
         return {"error": str(e)}
 
-@app.post("/test-busquedas-opcionales")
-async def test_busquedas_opcionales(data: dict):
-    """Endpoint de debug para verificar las búsquedas opcionales con MÁXIMA CALIDAD"""
-    empresa = data.get("empresa", "Entel Perú")
-    puesto = data.get("puesto", "IA Engineer")
-    nombre_entrevistador = data.get("nombre_entrevistador", None)
-    
-    # Opciones de búsqueda (por defecto todas activadas para test)
-    buscar_empresa = data.get("buscar_empresa", True)
-    buscar_mercado = data.get("buscar_puesto_mercado", True)
-    buscar_entrevistador = data.get("buscar_entrevistador", False)
-    
-    try:
-        resultados = {}
-        
-        # Test búsqueda de empresa
-        if buscar_empresa:
-            print(f"🔍 Testing búsqueda de empresa: {empresa}")
-            query_empresa = crear_prompt_empresa(empresa, puesto)
-            resultado_empresa = buscar_con_sonar(query_empresa)
-            resultados["empresa"] = {
-                "query_enviado": query_empresa,
-                "contenido": resultado_empresa.contenido,
-                "fuentes": resultado_empresa.fuentes,
-                "tiempo_respuesta": resultado_empresa.tiempo_respuesta,
-                "modelo_usado": resultado_empresa.modelo_usado,
-                "numero_fuentes": len(resultado_empresa.fuentes)
-            }
-        
-        # Test búsqueda de mercado
-        if buscar_mercado:
-            print(f"🔍 Testing búsqueda de mercado: {puesto}")
-            query_mercado = crear_prompt_puesto_mercado(puesto)
-            resultado_mercado = buscar_con_sonar(query_mercado)
-            resultados["mercado"] = {
-                "query_enviado": query_mercado,
-                "contenido": resultado_mercado.contenido,
-                "fuentes": resultado_mercado.fuentes,
-                "tiempo_respuesta": resultado_mercado.tiempo_respuesta,
-                "modelo_usado": resultado_mercado.modelo_usado,
-                "numero_fuentes": len(resultado_mercado.fuentes)
-            }
-        
-        # Test búsqueda de entrevistador
-        if buscar_entrevistador and nombre_entrevistador:
-            print(f"🔍 Testing búsqueda de entrevistador: {nombre_entrevistador}")
-            query_entrevistador = crear_prompt_entrevistador_personal(nombre_entrevistador, empresa)
-            resultado_entrevistador = buscar_con_sonar(query_entrevistador)
-            resultados["entrevistador"] = {
-                "query_enviado": query_entrevistador,
-                "contenido": resultado_entrevistador.contenido,
-                "fuentes": resultado_entrevistador.fuentes,
-                "tiempo_respuesta": resultado_entrevistador.tiempo_respuesta,
-                "modelo_usado": resultado_entrevistador.modelo_usado,
-                "numero_fuentes": len(resultado_entrevistador.fuentes)
-            }
-        
-        # Calcular estadísticas totales
-        total_fuentes = sum(resultado.get("numero_fuentes", 0) for resultado in resultados.values())
-        tiempo_total = sum(resultado.get("tiempo_respuesta", 0) for resultado in resultados.values())
-        
-        return {
-            "tipo_busqueda": "opcionales_separadas",
-            "parametros": {
-                "empresa": empresa,
-                "puesto": puesto,
-                "nombre_entrevistador": nombre_entrevistador,
-                "buscar_empresa": buscar_empresa,
-                "buscar_mercado": buscar_mercado,
-                "buscar_entrevistador": buscar_entrevistador
-            },
-            "resultados": resultados,
-            "estadisticas": {
-                "busquedas_realizadas": len(resultados),
-                "total_fuentes": total_fuentes,
-                "tiempo_total": tiempo_total,
-                "calidad_investigacion": "Alta" if total_fuentes >= 6 else "Media" if total_fuentes >= 3 else "Baja"
-            }
-        }
-        
-    except Exception as e:
-        return {"error": str(e)}
-
 @app.post("/generar-entrevista", response_model=RespuestaEntrevista)
 async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
     """Endpoint principal para generar preguntas de entrevista desde texto libre con investigación web integral"""
@@ -1017,7 +745,7 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         # 1. Extraer información estructurada del texto con OpenAI
         propuesta = extraer_informacion_propuesta(propuesta_texto.texto)
         
-        print(f"\n📋 PROPUESTA LABORAL EXTRAÍDA:")
+        print("\n📋 PROPUESTA LABORAL EXTRAÍDA:")
         print(f"{'='*80}")
         print(f"🏢 Empresa: {propuesta.empresa}")
         print(f"💼 Puesto: {propuesta.puesto}")
@@ -1043,11 +771,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         total_fuentes = len(info_integral.fuentes)
         tiempo_total = info_integral.tiempo_respuesta
         
-        print(f"\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
+        print("\n📊 RESUMEN DE LA BÚSQUEDA INTEGRAL (MÁXIMA CALIDAD):")
         print(f"{'='*80}")
         print(f"🔍 Búsqueda Integral Completa ({total_fuentes}/3 fuentes): {tiempo_total:.2f}s - {info_integral.modelo_usado}")
-        print(f"🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
-        print(f"📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
+        print("🚀 Configuración: sonar-pro, 2500 tokens, temp=0.1")
+        print("📚 Información obtenida: Empresa + Cultura + Puesto en una sola consulta")
         print(f"📚 Total: {total_fuentes} fuentes específicas en {tiempo_total:.2f}s")
         print(f"{'='*80}")
         print(f"📚 Investigación integral completa con MÁXIMA CALIDAD: {total_fuentes} fuentes")
@@ -1064,7 +792,6 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         # 6. Construir respuesta completa
         respuesta = RespuestaEntrevista(
             preguntas=preguntas,
-            consejos_conexion=[],  # No aplicable en búsqueda integral
             informacion_empresa={
                 "nombre": propuesta.empresa,
                 "informacion_encontrada": info_integral.contenido[:800] + "..." if len(info_integral.contenido) > 800 else info_integral.contenido,
@@ -1091,11 +818,11 @@ async def generar_entrevista(propuesta_texto: PropuestaLaboralTexto):
         print(f"\n{'='*80}")
         print("🎉 PROCESO COMPLETADO EXITOSAMENTE CON MÁXIMA CALIDAD")
         print(f"{'='*80}")
-        print(f"📊 Resultados finales:")
+        print("📊 Resultados finales:")
         print(f"   • {len(preguntas)} preguntas contextualizadas con información integral de la empresa")
         print(f"   • {total_fuentes}/3 fuentes de alta calidad consultadas en una sola búsqueda")
         print(f"   • Tiempo total: {tiempo_total:.2f} segundos")
-        print(f"   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
+        print("   • Configuración: sonar-pro, 2500 tokens en búsqueda integral")
         print(f"   • Calidad investigación: {'Alta' if total_fuentes >= 3 else 'Media' if total_fuentes >= 2 else 'Baja'}")
         print(f"{'='*80}")
         print(f"🚀 Respuesta construida con MÁXIMA CALIDAD: {len(preguntas)} preguntas, {total_fuentes} fuentes")
@@ -1255,7 +982,27 @@ async def generar_entrevista_con_opciones(propuesta_opciones: PropuestaLaboralCo
                 "busqueda_web_realizada": len(busquedas_realizadas) > 0,
                 "tiempo_total": tiempo_total,
                 "total_fuentes": total_fuentes,
-                "busquedas_completadas": len(busquedas_realizadas)
+                "busquedas_completadas": len(busquedas_realizadas),
+                "resultados_busquedas": {
+                    "empresa": {
+                        "contenido": info_empresa[:1000] + "..." if len(info_empresa) > 1000 else info_empresa,
+                        "activada": propuesta_opciones.buscar_empresa,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "empresa"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "empresa"), 0.0)
+                    },
+                    "mercado": {
+                        "contenido": info_mercado[:1000] + "..." if len(info_mercado) > 1000 else info_mercado,
+                        "activada": propuesta_opciones.buscar_puesto_mercado,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "mercado"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "mercado"), 0.0)
+                    },
+                    "entrevistador": {
+                        "contenido": info_entrevistador[:1000] + "..." if len(info_entrevistador) > 1000 else info_entrevistador,
+                        "activada": propuesta_opciones.buscar_entrevistador,
+                        "fuentes": len([b for b in busquedas_realizadas if b["tipo"] == "entrevistador"]),
+                        "tiempo": next((b["tiempo"] for b in busquedas_realizadas if b["tipo"] == "entrevistador"), 0.0)
+                    }
+                }
             }
         )
         

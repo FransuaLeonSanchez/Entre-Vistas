@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Mic, 
@@ -15,7 +15,8 @@ import {
   X,
   Volume2,
   Camera,
-  Send
+  Send,
+  Play
 } from 'lucide-react'
 
 const fadeInUp = {
@@ -68,7 +69,7 @@ const interactiveQuestions = [
 ]
 
 export default function ReunionPage() {
-  const [isMicOn, setIsMicOn] = useState(true)
+  const [isMicOn, setIsMicOn] = useState(false)
   const [isCameraOn, setIsCameraOn] = useState(true)
   const [questionsOpen, setQuestionsOpen] = useState(true)
   const [documentsOpen, setDocumentsOpen] = useState(true)
@@ -78,19 +79,173 @@ export default function ReunionPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
   const [conversationHistory, setConversationHistory] = useState<Array<{question: string, answer: string, followUp?: string}>>([])
-
-  // Simulate AI speaking
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsSpeaking(prev => !prev)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+  
+  // Backend integration states
+  const [isConnected, setIsConnected] = useState(false)
+  const [isStarted, setIsStarted] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  
+  const wsRef = useRef<WebSocket | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   // Auto-collapse sidebar on mount
   useEffect(() => {
     // Dispatch event to collapse sidebar
     window.dispatchEvent(new CustomEvent('collapseSidebar'))
+  }, [])
+
+  // Connect to WebSocket
+  const connectWebSocket = () => {
+    const ws = new WebSocket('ws://localhost:8000/ws')
+    
+    ws.onopen = () => {
+      console.log('WebSocket conectado')
+      setIsConnected(true)
+      // María se presenta automáticamente al conectarse
+    }
+    
+    ws.onmessage = async (event) => {
+      const data = JSON.parse(event.data)
+      
+      switch (data.type) {
+        case 'chat_response':
+          // Mostrar que está hablando
+          setIsSpeaking(true)
+          setIsProcessing(false)
+          break
+          
+        case 'tts_result':
+          // Reproducir audio cuando esté listo
+          if (data.data) {
+            playAudio(data.data)
+          }
+          break
+          
+        case 'stt_result':
+          // Transcripción recibida
+          console.log('Transcripción:', data.data)
+          break
+          
+        case 'chat_start':
+        case 'tts_start':
+        case 'stt_start':
+          // Indicadores de progreso
+          setIsProcessing(true)
+          break
+          
+        case 'error':
+          console.error('Error del servidor:', data.data)
+          setIsProcessing(false)
+          setIsSpeaking(false)
+          break
+      }
+    }
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error)
+      setIsConnected(false)
+    }
+    
+    ws.onclose = () => {
+      console.log('WebSocket desconectado')
+      setIsConnected(false)
+      setIsStarted(false)
+    }
+    
+    wsRef.current = ws
+  }
+
+  // Play audio from base64
+  const playAudio = (base64Audio: string) => {
+    const audio = new Audio(`data:audio/mp3;base64,${base64Audio}`)
+    audio.onended = () => {
+      setIsSpeaking(false)
+    }
+    audio.play()
+    audioRef.current = audio
+  }
+
+  // Start recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+        audioChunksRef.current = []
+        
+        // Convert to base64 and send
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64Audio = reader.result?.toString().split(',')[1]
+          if (base64Audio && wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              type: 'audio',
+              data: base64Audio
+            }))
+          }
+        }
+        reader.readAsDataURL(audioBlob)
+      }
+      
+      mediaRecorder.start()
+      mediaRecorderRef.current = mediaRecorder
+      setIsRecording(true)
+    } catch (error) {
+      console.error('Error al iniciar grabación:', error)
+    }
+  }
+
+  // Stop recording
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop())
+      setIsRecording(false)
+    }
+  }
+
+  // Handle push-to-talk
+  const handleMicToggle = () => {
+    if (!isStarted || isProcessing) return
+    
+    if (isRecording) {
+      // Stop recording and send
+      stopRecording()
+      setIsMicOn(false)
+    } else {
+      // Start recording
+      startRecording()
+      setIsMicOn(true)
+    }
+  }
+
+  // Start interview
+  const startInterview = () => {
+    setIsStarted(true)
+    connectWebSocket()
+  }
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close()
+      }
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop()
+      }
+    }
   }, [])
 
   const handleAnswerSelect = (answer: string, followUp: string) => {
@@ -221,31 +376,61 @@ export default function ReunionPage() {
             >
               <div className="w-1 h-1 bg-green-400 rounded-full" />
               <span className="text-green-400 text-xs">
-                {isSpeaking ? 'Hablando...' : 'Listo para conversar'}
+                {isSpeaking ? 'Hablando...' : isConnected ? 'Listo para conversar' : 'Desconectado'}
               </span>
             </motion.div>
           </motion.div>
 
+          {/* Start Interview Button */}
+          {!isStarted && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute top-80 transform -translate-x-1/2"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startInterview}
+                className="px-8 py-4 bg-gradient-to-r from-primary-500 to-secondary-500 text-white rounded-xl font-semibold shadow-lg flex items-center gap-3"
+              >
+                <Play className="w-5 h-5" />
+                Iniciar Entrevista
+              </motion.button>
+            </motion.div>
+          )}
+
           {/* Controls positioned relative to avatar */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-80 transform -translate-x-1/2 flex items-center gap-4"
-          >
+          {isStarted && (
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute top-80 transform -translate-x-1/2 flex items-center gap-4"
+            >
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => setIsMicOn(!isMicOn)}
-              className={`p-4 rounded-full transition-all duration-200 backdrop-blur-sm border-2 ${
-                isMicOn 
-                  ? 'bg-white/20 border-white/30 hover:bg-white/30' 
-                  : 'bg-red-500/80 border-red-400 hover:bg-red-600/80'
+              onClick={handleMicToggle}
+              disabled={isProcessing}
+              className={`p-4 rounded-full transition-all duration-200 backdrop-blur-sm border-2 relative ${
+                isRecording 
+                  ? 'bg-red-500/80 border-red-400 hover:bg-red-600/80' 
+                  : isProcessing
+                  ? 'bg-gray-500/50 border-gray-400 cursor-not-allowed'
+                  : 'bg-white/20 border-white/30 hover:bg-white/30'
               }`}
             >
-              {isMicOn ? (
-                <Mic className="w-6 h-6 text-white" />
+              {isRecording ? (
+                <>
+                  <Mic className="w-6 h-6 text-white animate-pulse" />
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-red-400"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                </>
               ) : (
-                <MicOff className="w-6 h-6 text-white" />
+                <Mic className={`w-6 h-6 ${isProcessing ? 'text-gray-300' : 'text-white'}`} />
               )}
             </motion.button>
 
@@ -266,6 +451,7 @@ export default function ReunionPage() {
               )}
             </motion.button>
           </motion.div>
+          )}
         </div>
 
         {/* User Camera (Bigger and more to the right) */}
