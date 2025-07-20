@@ -120,6 +120,38 @@
             font-size: 12px;
             white-space: pre-wrap;
         }
+        .checkbox-group {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        .checkbox-item label {
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+        .checkbox-description {
+            font-size: 12px;
+            color: #666;
+            margin-left: 25px;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+        .busquedas-status {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +229,12 @@
                 <div id="infoEmpresaContent"></div>
             </div>
             
+            <!-- Estado de las búsquedas -->
+            <div class="info-empresa" id="busquedasStatus" style="display: none;">
+                <h3>📊 Estado de las Búsquedas Realizadas</h3>
+                <div id="busquedasStatusContent"></div>
+            </div>
+            
             <!-- Resultados de las 3 búsquedas por separado -->
             <div class="section" id="resultadosBusquedas">
                 <h3>🔍 Resultados Detallados de las Búsquedas Web</h3>
@@ -225,7 +263,7 @@
                 <div id="preguntas"></div>
             </div>
             
-            <div class="section" id="consejosSeccion" style="display: none;">
+            <div class="section" id="consejosSeccion">
                 <h3>🤝 Consejos para Establecer Conexión Personal</h3>
                 <div id="consejos"></div>
             </div>
@@ -250,6 +288,17 @@
         const resultado = document.getElementById('resultado');
         const debug = document.getElementById('debug');
         
+        // Manejar visibilidad del campo nombre del entrevistador
+        document.getElementById('buscarEntrevistador').addEventListener('change', function() {
+            const nombreEntrevistadorGroup = document.getElementById('nombreEntrevistadorGroup');
+            if (this.checked) {
+                nombreEntrevistadorGroup.style.display = 'block';
+            } else {
+                nombreEntrevistadorGroup.style.display = 'none';
+                document.getElementById('nombreEntrevistador').value = ''; // Limpiar el campo
+            }
+        });
+        
         formulario.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -259,17 +308,21 @@
             loading.style.display = 'block';
             btnGenerar.disabled = true;
             
-            // Obtener datos del formulario
+            // Obtener datos del formulario con TODAS las opciones
             const datos = {
-                texto: document.getElementById('texto').value
+                texto: document.getElementById('texto').value,
+                buscar_empresa: document.getElementById('buscarEmpresa').checked,
+                buscar_puesto_mercado: document.getElementById('buscarMercado').checked,
+                buscar_entrevistador: document.getElementById('buscarEntrevistador').checked,
+                nombre_entrevistador: document.getElementById('nombreEntrevistador').value || null
             };
             
             // Mostrar datos enviados en debug
             debug.innerHTML = `DATOS ENVIADOS:\n${JSON.stringify(datos, null, 2)}\n\n`;
             
             try {
-                // Hacer petición a la API
-                const response = await fetch('http://localhost:8000/generar-entrevista', {
+                // Hacer petición al endpoint CON OPCIONES
+                const response = await fetch('http://localhost:8000/generar-entrevista-con-opciones', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -313,11 +366,11 @@
                 <p><strong>Requisitos:</strong> ${data.propuesta_extraida.requisitos}</p>
             `;
             
-            // Mostrar estado de búsquedas (solo para endpoint de opciones)
+            // Mostrar estado de búsquedas (para endpoint de opciones)
             const busquedasStatus = document.getElementById('busquedasStatus');
             const busquedasStatusContent = document.getElementById('busquedasStatusContent');
             
-            if (endpointType === 'opciones' && data.investigacion_detallada.busquedas_opcionales) {
+            if (data.investigacion_detallada.busquedas_opcionales) {
                 const opciones = data.investigacion_detallada.busquedas_opcionales;
                 busquedasStatusContent.innerHTML = `
                     <div style="display: flex; gap: 15px;">
@@ -346,7 +399,7 @@
             `;
             
             // Mostrar resultados detallados de las 3 búsquedas por separado
-            if (endpointType === 'opciones' && data.investigacion_detallada.resultados_busquedas) {
+            if (data.investigacion_detallada.resultados_busquedas) {
                 const resultados = data.investigacion_detallada.resultados_busquedas;
                 
                 // Mostrar/ocultar secciones según las búsquedas activadas
@@ -410,7 +463,22 @@
                 `;
             });
             
-            // Las actividades han sido eliminadas del sistema
+            // Mostrar consejos de conexión personal (si existen)
+            const consejosDiv = document.getElementById('consejos');
+            const consejosSeccion = document.getElementById('consejosSeccion');
+            if (data.consejos_conexion && data.consejos_conexion.length > 0) {
+                consejosDiv.innerHTML = '';
+                data.consejos_conexion.forEach((consejo, index) => {
+                    consejosDiv.innerHTML += `
+                        <div class="list-item">
+                            <strong>💡 ${index + 1}.</strong> ${consejo}
+                        </div>
+                    `;
+                });
+                consejosSeccion.style.display = 'block';
+            } else {
+                consejosSeccion.style.display = 'none';
+            }
             
             // Mostrar resultado
             resultado.style.display = 'block';

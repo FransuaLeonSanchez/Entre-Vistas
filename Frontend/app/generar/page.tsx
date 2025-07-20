@@ -109,7 +109,7 @@ export default function GenerarPage() {
               <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
             <h1 className="text-4xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              Generando Entrevistas
+              Entre Vistas
             </h1>
           </div>
           <p className="text-xl text-gray-600 font-medium">
