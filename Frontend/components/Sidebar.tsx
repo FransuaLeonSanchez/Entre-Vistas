@@ -25,14 +25,23 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const pathname = usePathname()
 
-  // Listen for sidebar collapse events from other components
+  // Listen for sidebar collapse/expand events from other components
   useEffect(() => {
     const handleCollapseSidebar = () => {
       setIsCollapsed(true)
     }
 
+    const handleExpandSidebar = () => {
+      setIsCollapsed(false)
+    }
+
     window.addEventListener('collapseSidebar', handleCollapseSidebar)
-    return () => window.removeEventListener('collapseSidebar', handleCollapseSidebar)
+    window.addEventListener('expandSidebar', handleExpandSidebar)
+    
+    return () => {
+      window.removeEventListener('collapseSidebar', handleCollapseSidebar)
+      window.removeEventListener('expandSidebar', handleExpandSidebar)
+    }
   }, [])
 
   return (
