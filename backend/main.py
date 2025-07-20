@@ -35,7 +35,9 @@ async def health_check():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    session_id = await ws_handler.connect(websocket)
+    # Obtener session_id desde query params si está disponible
+    session_id_param = websocket.query_params.get("session_id")
+    session_id = await ws_handler.connect(websocket, session_id_param)
     await ws_handler.handle_message(websocket, session_id)
 
 

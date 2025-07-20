@@ -100,6 +100,7 @@ export default function ReunionPage() {
   const audioChunksRef = useRef<Blob[]>([])
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const transcriptionEndRef = useRef<HTMLDivElement | null>(null)
+  const sessionIdRef = useRef<string | null>(null)
 
   // Auto-collapse sidebar on mount
   useEffect(() => {
@@ -113,11 +114,18 @@ export default function ReunionPage() {
   }, [transcriptionMessages])
 
   // Connect to WebSocket
-  const connectWebSocket = () => {
-    const ws = new WebSocket('ws://localhost:8000/ws')
+  const connectWebSocket = (forceNewSession = false) => {
+    // Generar nuevo session ID si es necesario
+    if (forceNewSession || !sessionIdRef.current) {
+      sessionIdRef.current = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      console.log('Nuevo session ID:', sessionIdRef.current)
+    }
+    
+    // Incluir session ID en la URL de conexión
+    const ws = new WebSocket(`ws://localhost:8000/ws?session_id=${sessionIdRef.current}`)
     
     ws.onopen = () => {
-      console.log('WebSocket conectado')
+      console.log('WebSocket conectado con session:', sessionIdRef.current)
       setIsConnected(true)
       // María se presenta automáticamente al conectarse
     }
@@ -334,8 +342,21 @@ export default function ReunionPage() {
 
   // Start interview
   const startInterview = () => {
+    // Cerrar conexión anterior si existe
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.close()
+    }
+    
+    // Limpiar estados anteriores
+    setTranscriptionMessages([])
+    setIsProcessing(false)
+    setIsRecording(false)
+    setIsSpeaking(false)
+    setIsMicOn(false)
+    
+    // Iniciar nueva entrevista con nueva sesión
     setIsStarted(true)
-    connectWebSocket()
+    connectWebSocket(true) // true = forzar nueva sesión
   }
 
   // Cleanup on unmount
@@ -507,8 +528,10 @@ export default function ReunionPage() {
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
-              className="absolute top-80 transform -translate-x-1/2 flex items-center gap-4"
+              className="absolute top-80 transform -translate-x-1/2 flex flex-col items-center gap-4"
             >
+            {/* Control buttons row */}
+            <div className="flex items-center gap-4">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -558,6 +581,21 @@ export default function ReunionPage() {
               ) : (
                 <VideoOff className="w-6 h-6 text-white" />
               )}
+            </motion.button>
+            </div>
+            
+            {/* New Interview Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setIsStarted(false)
+                setTimeout(() => startInterview(), 100)
+              }}
+              className="px-6 py-2 bg-gray-600/80 text-white rounded-lg font-medium shadow-md hover:bg-gray-700/80 transition-colors flex items-center gap-2"
+            >
+              <Play className="w-4 h-4" />
+              Nueva Entrevista
             </motion.button>
           </motion.div>
           )}

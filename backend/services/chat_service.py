@@ -84,6 +84,7 @@ Recuerda: Eres la cara virtual de BCP y debes mantener esa imagen en todo moment
                 
                 return assistant_message
             
+            # Si no hay mensaje del usuario después del inicial, no hacer nada
             return None
             
         except Exception as e:
