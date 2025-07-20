@@ -26,48 +26,7 @@ const fadeInUp = {
   transition: { duration: 0.5 }
 }
 
-const interactiveQuestions = [
-  {
-    id: 1,
-    question: "Cuéntame sobre tu experiencia con React",
-    answered: false,
-    alternatives: [
-      { text: "Tengo 2-3 años de experiencia", followUp: "¿Qué proyectos has desarrollado con React?" },
-      { text: "Soy principiante, menos de 1 año", followUp: "¿Qué te motivó a aprender React?" },
-      { text: "Tengo más de 4 años de experiencia", followUp: "¿Has trabajado con SSR o frameworks como Next.js?" }
-    ]
-  },
-  {
-    id: 2,
-    question: "¿Cómo manejas el estado en aplicaciones grandes?",
-    answered: false,
-    alternatives: [
-      { text: "Uso Redux o Zustand", followUp: "¿Puedes explicar cuándo prefieres cada uno?" },
-      { text: "Context API principalmente", followUp: "¿Has enfrentado problemas de rendimiento con Context?" },
-      { text: "Estado local con hooks", followUp: "¿Cómo organizas el estado compartido entre componentes?" }
-    ]
-  },
-  {
-    id: 3,
-    question: "Describe tu experiencia con testing en frontend",
-    answered: false,
-    alternatives: [
-      { text: "Uso Jest y React Testing Library", followUp: "¿Qué tipos de tests priorizas más?" },
-      { text: "Principalmente testing manual", followUp: "¿Te interesaría aprender testing automatizado?" },
-      { text: "Cypress para E2E y unit tests", followUp: "¿Cómo estructuras tu suite de tests?" }
-    ]
-  },
-  {
-    id: 4,
-    question: "¿Cómo optimizas el rendimiento en React?",
-    answered: false,
-    alternatives: [
-      { text: "Memo, useMemo, useCallback", followUp: "¿Puedes dar un ejemplo específico de cuándo los usas?" },
-      { text: "Code splitting y lazy loading", followUp: "¿Qué estrategias usas para el bundle splitting?" },
-      { text: "Virtualización para listas grandes", followUp: "¿Has usado react-window o react-virtualized?" }
-    ]
-  }
-]
+
 
 export default function ReunionPage() {
   const [isMicOn, setIsMicOn] = useState(false)
@@ -76,10 +35,7 @@ export default function ReunionPage() {
   const [documentsOpen, setDocumentsOpen] = useState(true)
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
   const [isSpeaking, setIsSpeaking] = useState(false)
-  const [questions, setQuestions] = useState(interactiveQuestions)
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
-  const [conversationHistory, setConversationHistory] = useState<Array<{question: string, answer: string, followUp?: string}>>([])
+  const [interviewQuestions, setInterviewQuestions] = useState<Array<{ id: number, pregunta: string, categoria: string }>>([])
   
   // Backend integration states
   const [isConnected, setIsConnected] = useState(false)
@@ -341,7 +297,7 @@ export default function ReunionPage() {
   }
 
   // Start interview
-  const startInterview = () => {
+  const startInterview = async () => {
     // Cerrar conexión anterior si existe
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.close()
@@ -353,6 +309,20 @@ export default function ReunionPage() {
     setIsRecording(false)
     setIsSpeaking(false)
     setIsMicOn(false)
+    
+    // Cargar preguntas desde el backend
+    try {
+      const response = await fetch('http://localhost:8000/api/preguntas')
+      const preguntas = await response.json()
+      if (!response.ok || preguntas.error) {
+        console.error('Error al cargar preguntas:', preguntas.error)
+      } else {
+        setInterviewQuestions(preguntas)
+        console.log('Preguntas cargadas:', preguntas)
+      }
+    } catch (error) {
+      console.error('Error al cargar preguntas:', error)
+    }
     
     // Iniciar nueva entrevista con nueva sesión
     setIsStarted(true)
@@ -371,46 +341,11 @@ export default function ReunionPage() {
     }
   }, [])
 
-  const handleAnswerSelect = (answer: string, followUp: string) => {
-    setSelectedAnswer(answer)
-    
-    // Add to conversation history
-    const currentQuestion = questions[currentQuestionIndex]
-    const newEntry = {
-      question: currentQuestion.question,
-      answer: answer,
-      followUp: followUp
-    }
-    
-    setConversationHistory(prev => [...prev, newEntry])
-    
-    // Mark question as answered
-    const updatedQuestions = questions.map((q, index) => 
-      index === currentQuestionIndex ? { ...q, answered: true } : q
-    )
-    setQuestions(updatedQuestions)
-    
-    // Move to next question after delay
-    setTimeout(() => {
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(prev => prev + 1)
-        setSelectedAnswer(null)
-      }
-    }, 2000)
-  }
-
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files).map(file => file.name)
       setUploadedFiles(prev => [...prev, ...files])
     }
-  }
-
-  const resetInterview = () => {
-    setQuestions(interactiveQuestions)
-    setCurrentQuestionIndex(0)
-    setSelectedAnswer(null)
-    setConversationHistory([])
   }
 
   return (
@@ -721,7 +656,7 @@ export default function ReunionPage() {
         )}
       </AnimatePresence>
 
-      {/* Floating Questions Panel - Interactive */}
+      {/* Floating Questions Panel - Interview Questions from Backend */}
       <AnimatePresence>
         {questionsOpen && (
           <motion.div
@@ -734,129 +669,64 @@ export default function ReunionPage() {
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <h3 className="font-semibold text-lg flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-primary-500" />
-                Preguntas de Entrevista
+                Preguntas de Entrevista BCP
               </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={resetInterview}
-                  className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Reiniciar
-                </button>
-                <button
-                  onClick={() => setQuestionsOpen(false)}
-                  className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
+              <button
+                onClick={() => setQuestionsOpen(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
 
             {/* Content */}
             <div className="p-4 space-y-4 max-h-96 overflow-y-auto">
-              {/* Progress */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Progreso: {currentQuestionIndex + 1}/{questions.length}</span>
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                  />
+              {interviewQuestions.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 text-sm">
+                    Las preguntas se cargarán cuando inicie la entrevista
+                  </p>
                 </div>
-              </div>
-
-              {/* Current Question */}
-              {currentQuestionIndex < questions.length && (
-                <motion.div
-                  key={currentQuestionIndex}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-blue-50 border border-blue-200 rounded-lg p-4"
-                >
-                  <h4 className="font-medium text-gray-800 mb-3">
-                    {questions[currentQuestionIndex].question}
-                  </h4>
-                  
-                  <div className="space-y-2">
-                    {questions[currentQuestionIndex].alternatives.map((alt, index) => (
-                      <motion.button
-                        key={index}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleAnswerSelect(alt.text, alt.followUp)}
-                        disabled={selectedAnswer !== null}
-                        className={`w-full text-left p-3 rounded-lg border transition-all ${
-                          selectedAnswer === alt.text
-                            ? 'bg-primary-100 border-primary-300 text-primary-700'
-                            : selectedAnswer
-                            ? 'bg-gray-100 border-gray-200 text-gray-500'
-                            : 'bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300'
+              ) : (
+                <>
+                  {/* Question list */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-gray-700">Temas de la entrevista:</h4>
+                    {interviewQuestions.map((question, index) => (
+                      <motion.div
+                        key={question.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.1 }}
+                        className={`border rounded-lg p-3 ${
+                          index === 0 ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200'
                         }`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm">{alt.text}</span>
-                          {selectedAnswer === alt.text && (
-                            <CheckCircle className="w-4 h-4 text-primary-500" />
-                          )}
+                        <div className="flex items-start gap-2">
+                          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            index === 0 ? 'bg-blue-500 text-white' : 'bg-gray-400 text-white'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-gray-800">{question.pregunta}</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              Categoría: {question.categoria.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </p>
+                          </div>
                         </div>
-                      </motion.button>
+                      </motion.div>
                     ))}
                   </div>
-
-                  {selectedAnswer && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg"
-                    >
-                      <p className="text-sm text-green-700">
-                        <strong>Seguimiento:</strong> {questions[currentQuestionIndex].alternatives.find(alt => alt.text === selectedAnswer)?.followUp}
-                      </p>
-                    </motion.div>
-                  )}
-                </motion.div>
-              )}
-
-              {/* Completed Questions History */}
-              {conversationHistory.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-gray-700">Preguntas Completadas:</h4>
-                  {conversationHistory.map((entry, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="border border-gray-200 rounded-lg p-3 bg-gray-50"
-                    >
-                      <p className="text-sm font-medium text-gray-800 mb-1">{entry.question}</p>
-                      <p className="text-xs text-blue-600 mb-1">✓ {entry.answer}</p>
-                      {entry.followUp && (
-                        <p className="text-xs text-gray-600">→ {entry.followUp}</p>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-
-              {/* Interview Complete */}
-              {currentQuestionIndex >= questions.length && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="text-center p-6 bg-green-50 border border-green-200 rounded-lg"
-                >
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-                  <h4 className="font-semibold text-green-800 mb-2">¡Entrevista Completada!</h4>
-                  <p className="text-sm text-green-600 mb-4">
-                    Has respondido todas las preguntas. Excelente trabajo.
-                  </p>
-                  <button
-                    onClick={resetInterview}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    Comenzar Nueva Entrevista
-                  </button>
-                </motion.div>
+                  
+                  {/* Info note */}
+                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-xs text-amber-700">
+                      <strong>Nota:</strong> María realizará estas preguntas durante la conversación. Responde de forma natural y completa.
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </motion.div>
