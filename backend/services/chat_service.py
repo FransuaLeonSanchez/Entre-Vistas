@@ -11,15 +11,19 @@ class ChatService:
             raise ValueError("OPENAI_API_KEY no configurada")
         self.client = OpenAI(api_key=settings.openai_api_key)
         self.model = settings.chat_model
-        
+
         # Cargar preguntas desde JSON
-        json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'preguntas.json')
-        with open(json_path, 'r', encoding='utf-8') as f:
+        json_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), "preguntas.json"
+        )
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            self.preguntas = data['preguntas_entrevista']
+            self.preguntas = data["preguntas_entrevista"]
         # Formatear las preguntas para incluir en el prompt
-        preguntas_formato = "\n".join([f"{i+1}. {p['pregunta']}" for i, p in enumerate(self.preguntas)])
-        
+        preguntas_formato = "\n".join(
+            [f"{i+1}. {p['pregunta']}" for i, p in enumerate(self.preguntas)]
+        )
+
         self.system_prompt = f"""Eres María, entrevistadora virtual oficial del Banco de Crédito del Perú (BCP), el banco líder del Perú con más de 130 años de historia. Conduces entrevistas para el puesto de ANALISTA DE DATOS en la División de Analytics & Digital Transformation del BCP.
 
 CONTEXTO DEL PUESTO:
@@ -70,7 +74,7 @@ CIERRE DE ENTREVISTA:
 Recuerda: Representas al banco más importante del Perú. Mantén siempre un balance entre profesionalismo y calidez humana."""
         self.conversations: Dict[str, List[Dict[str, str]]] = {}
         self.initial_message_sent: Dict[str, bool] = {}
-    
+
     async def get_response(self, message: str, session_id: str) -> Optional[str]:
         try:
             # Primera interacción: crear conversación
@@ -79,48 +83,56 @@ Recuerda: Representas al banco más importante del Perú. Mantén siempre un bal
                     {"role": "system", "content": self.system_prompt}
                 ]
                 self.initial_message_sent[session_id] = False
-            
+
             # SIEMPRE devolver el mensaje hardcodeado en la primera interacción
             if not self.initial_message_sent.get(session_id, False):
                 intro_message = "¡Hola! Soy María del BCP. Vamos a iniciar la entrevista para Analista de Datos. ¿Cuál es tu nombre completo?"
-                self.conversations[session_id].append({"role": "assistant", "content": intro_message})
+                self.conversations[session_id].append(
+                    {"role": "assistant", "content": intro_message}
+                )
                 self.initial_message_sent[session_id] = True
-                print(f"[CHAT SERVICE] Enviando mensaje inicial hardcodeado para sesión {session_id}")
+                print(
+                    f"[CHAT SERVICE] Enviando mensaje inicial hardcodeado para sesión {session_id}"
+                )
                 print(f"[CHAT SERVICE] Mensaje: {intro_message}")
                 # IMPORTANTE: Retornar inmediatamente sin llamar a OpenAI
                 return intro_message
-            
+
             # Solo procesar con OpenAI si hay un mensaje real del usuario Y ya se envió el inicial
             if message.strip() and self.initial_message_sent.get(session_id, False):
-                self.conversations[session_id].append({"role": "user", "content": message})
-            
+                self.conversations[session_id].append(
+                    {"role": "user", "content": message}
+                )
+
                 response = self.client.chat.completions.create(
                     model=self.model,
                     messages=self.conversations[session_id],
                     temperature=0.7,  # Controlado para mantener profesionalismo
-                    max_tokens=150    # Respuestas concisas
+                    max_tokens=150,  # Respuestas concisas
                 )
-                
+
                 assistant_message = response.choices[0].message.content
-                self.conversations[session_id].append({"role": "assistant", "content": assistant_message})
-                
+                self.conversations[session_id].append(
+                    {"role": "assistant", "content": assistant_message}
+                )
+
                 if len(self.conversations[session_id]) > 20:
                     # Mantener el prompt del sistema y los últimos 9 mensajes
                     self.conversations[session_id] = [
                         self.conversations[session_id][0]  # System prompt
                     ] + self.conversations[session_id][-9:]
-                
+
                 return assistant_message
-            
+
             # Si no hay mensaje o es el primer mensaje vacío, no hacer nada
             return None
-            
+
         except Exception as e:
             print(f"Error en chat: {e}")
             return None
-    
+
     def clear_conversation(self, session_id: str):
         if session_id in self.conversations:
             del self.conversations[session_id]
         if session_id in self.initial_message_sent:
-            del self.initial_message_sent[session_id] 
+            del self.initial_message_sent[session_id]

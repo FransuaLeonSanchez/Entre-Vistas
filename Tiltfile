@@ -25,11 +25,3 @@ local_resource(
     deps=['Frontend/app', 'Frontend/components', 'Frontend/lib', 'Frontend/package.json'],
     labels=['ui']
 )
-
-# Search Content Service (mata procesos del puerto 8001 antes de iniciar)
-local_resource(
-    'search-content',
-    serve_cmd='lsof -ti:8001 | xargs -r kill -9 || true && cd search_content && . .venv/bin/activate && python main.py',
-    deps=['search_content/main.py', 'search_content/requirements.txt'],
-    labels=['search']
-) 

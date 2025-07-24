@@ -19,8 +19,7 @@ import {
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5 }
+  animate: { opacity: 1, y: 0 }
 }
 
 const staggerContainer = {
@@ -44,13 +43,6 @@ interface PropuestaExtraida {
   requisitos: string
 }
 
-interface BusquedaDetalle {
-  contenido: string
-  activada: boolean
-  fuentes: number
-  tiempo: number
-}
-
 interface ResultadosApi {
   preguntas: string[]
   consejos_conexion: string[]
@@ -60,20 +52,6 @@ interface ResultadosApi {
     fuentes_consultadas: number
   }
   propuesta_extraida: PropuestaExtraida
-  investigacion_detallada: {
-    busquedas_opcionales?: {
-      empresa: { activada: boolean; fuentes: number }
-      mercado: { activada: boolean; fuentes: number }
-    }
-    resultados_busquedas?: {
-      empresa: BusquedaDetalle
-      mercado: BusquedaDetalle
-    }
-    calidad_investigacion: string
-    tiempo_total: number
-    total_fuentes?: number
-    busquedas_completadas?: number
-  }
 }
 
 export default function GenerarPage() {
@@ -139,11 +117,11 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
 
   const testConnection = async () => {
     try {
-      const response = await fetch('http://localhost:8001/')
+      const response = await fetch('http://localhost:8000/')
       const data = await response.json()
       alert(`✅ Conexión exitosa: ${data.mensaje}`)
     } catch (err) {
-      alert(`❌ Error de conexión: ${err}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8001`)
+      alert(`❌ Error de conexión: ${err}\n\nAsegúrate de que la API esté ejecutándose en http://localhost:8000`)
     }
   }
 
@@ -168,7 +146,7 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
         nombre_entrevistador: null
       }
 
-      const response = await fetch('http://localhost:8001/generar-entrevista-con-opciones', {
+      const response = await fetch('http://localhost:8000/api/generar-entrevista-con-opciones', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -200,7 +178,11 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
         className="max-w-4xl mx-auto space-y-8"
       >
         {/* Header */}
-        <motion.div variants={fadeInUp} className="text-center space-y-4">
+        <motion.div 
+          variants={fadeInUp}
+          transition={{ duration: 0.5 }}
+          className="text-center space-y-4"
+        >
           <div className="flex items-center justify-center gap-3">
             <motion.div
               animate={{ rotate: 360 }}
@@ -227,6 +209,7 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
         {/* Main Form */}
         <motion.form
           variants={fadeInUp}
+          transition={{ duration: 0.5 }}
           onSubmit={handleSubmit}
           className="card space-y-6"
         >
@@ -435,21 +418,17 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
             </div>
 
             {/* Search Status */}
-            {results.investigacion_detallada.busquedas_opcionales && (
-              <div className="card bg-gradient-to-r from-green-50 to-emerald-50">
-                <h3 className="text-xl font-bold text-green-800 mb-4">📊 Estado de las Búsquedas</h3>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div>🏢 Empresa: {results.investigacion_detallada.busquedas_opcionales.empresa.activada ? `✅ (${results.investigacion_detallada.busquedas_opcionales.empresa.fuentes} fuentes)` : '❌ Desactivada'}</div>
-                  <div>📈 Mercado: {results.investigacion_detallada.busquedas_opcionales.mercado.activada ? `✅ (${results.investigacion_detallada.busquedas_opcionales.mercado.fuentes} fuentes)` : '❌ Desactivada'}</div>
-                </div>
-                <div className="mt-3 text-sm">
-                  <strong>Total:</strong> {results.investigacion_detallada.total_fuentes || 0} fuentes consultadas | 
-                  <strong> Calidad:</strong> {results.investigacion_detallada.calidad_investigacion} | 
-                  <strong> Tiempo:</strong> {results.investigacion_detallada.tiempo_total?.toFixed(2)}s
-                  {(results.investigacion_detallada.busquedas_completadas || 0) > 1 ? ' ⚡ (Paralelo)' : ''}
-                </div>
+            <div className="card bg-gradient-to-r from-green-50 to-emerald-50">
+              <h3 className="text-xl font-bold text-green-800 mb-4">📊 Estado de las Búsquedas Realizadas</h3>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div>🏢 Búsqueda de Empresa: {formData.buscar_empresa ? '✅ Activada' : '❌ Desactivada'}</div>
+                <div>📈 Análisis de Mercado: {formData.buscar_puesto_mercado ? '✅ Activada' : '❌ Desactivada'}</div>
               </div>
-            )}
+              <div className="mt-3 text-sm">
+                <strong>Fuentes consultadas:</strong> {results.informacion_empresa.fuentes_consultadas} | 
+                <strong> Estado:</strong> Generación completada ✅
+              </div>
+            </div>
 
             {/* Company Information */}
             <div className="card bg-gradient-to-r from-purple-50 to-pink-50">
@@ -461,40 +440,9 @@ Porque aquí combinamos talento, tecnología y propósito para transformar la ex
               </div>
             </div>
 
-            {/* Detailed Search Results */}
-            {results.investigacion_detallada.resultados_busquedas && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-gray-900">🔍 Resultados Detallados de las Búsquedas Web</h3>
-                
-                {/* Company Search */}
-                {results.investigacion_detallada.resultados_busquedas.empresa.activada && (
-                  <div className="card bg-blue-50">
-                    <h4 className="font-bold text-blue-800 mb-2">🏢 Búsqueda: Información de la Empresa</h4>
-                    <p className="text-sm text-gray-700 mb-2">{results.investigacion_detallada.resultados_busquedas.empresa.contenido}</p>
-                    <p className="text-xs text-gray-500">
-                      📊 Estadísticas: {results.investigacion_detallada.resultados_busquedas.empresa.fuentes} fuentes | 
-                      {results.investigacion_detallada.resultados_busquedas.empresa.tiempo.toFixed(2)}s | Estado: ✅ Completada
-                    </p>
-                  </div>
-                )}
-
-                {/* Market Search */}
-                {results.investigacion_detallada.resultados_busquedas.mercado.activada && (
-                  <div className="card bg-indigo-50">
-                    <h4 className="font-bold text-indigo-800 mb-2">📈 Búsqueda: Análisis del Mercado Laboral</h4>
-                    <p className="text-sm text-gray-700 mb-2">{results.investigacion_detallada.resultados_busquedas.mercado.contenido}</p>
-                    <p className="text-xs text-gray-500">
-                      📊 Estadísticas: {results.investigacion_detallada.resultados_busquedas.mercado.fuentes} fuentes | 
-                      {results.investigacion_detallada.resultados_busquedas.mercado.tiempo.toFixed(2)}s | Estado: ✅ Completada
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Generated Questions */}
             <div className="card">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">❓ Preguntas Contextualizadas con Información Específica</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">❓ Preguntas Contextualizadas Generadas</h3>
               <div className="space-y-3">
                 {results.preguntas.map((pregunta, index) => (
                   <div key={index} className="p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">

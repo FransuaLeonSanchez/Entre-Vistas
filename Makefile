@@ -7,7 +7,6 @@ fix:
 	@echo "🔧 Aplicando correcciones automáticas..."
 	@echo "📍 Python Backend (ruff)..."
 	@cd backend && . .venv/bin/activate && ruff check . --fix --quiet || true
-	@cd backend && . .venv/bin/activate && ruff check ../search_content --fix --quiet || true
 	@echo "✅ Python corregido"
 	@echo "📍 Next.js Frontend (ESLint)..."
 	@cd Frontend && npx eslint . --fix --ext .js,.jsx,.ts,.tsx || true
